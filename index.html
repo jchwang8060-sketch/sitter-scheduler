@@ -189,6 +189,19 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 /* FAB */
 .fab{position:fixed;bottom:70px;right:16px;width:52px;height:52px;background:var(--p);border:none;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:22px;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(79,126,247,.4);z-index:40}
 .fab.show{display:flex}
+/* QUICK INPUT */
+.qi-leg{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:default}
+.qi-cell{border:1.5px solid var(--bd);border-radius:7px;padding:4px 2px;text-align:center;cursor:pointer;transition:.1s;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:600;color:var(--t2)}
+.qi-cell:active{opacity:.7}
+.qi-cell.qi-D{background:#FFD6D6;color:#C0392B;border-color:#f5b5b5}
+.qi-cell.qi-E{background:#D6F0F0;color:#0F6E56;border-color:#a8ddd8}
+.qi-cell.qi-N1{background:#E0E0E0;color:#444;border-color:#ccc}
+.qi-cell.qi-N2{background:#E0E0E0;color:#444;border-color:#ccc}
+.qi-cell.qi-EDU{background:#E8D5F5;color:#6A1B9A;border-color:#d4b0f0}
+.qi-cell.qi-OFF{background:#FFF3CD;color:#856404;border-color:#f0df8a}
+.qi-cell.qi-we{background:var(--sur2);opacity:.5;cursor:default}
+.qi-dow{text-align:center;font-size:10px;font-weight:700;padding:3px 0}
+.qi-dow:first-child{color:var(--r)}.qi-dow:last-child{color:var(--p)}
 </style>
 </head>
 <body>
@@ -254,15 +267,12 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <span style="margin-left:auto;color:var(--t3)">💡 셀 탭 → 수정</span>
   </div>
 
-  <!-- REF IMAGE SECTION (below calendar, scroll down) -->
+  <!-- REF IMAGE + QUICK INPUT SECTION -->
   <div style="margin-top:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:13px;font-weight:700;color:var(--t2)">📷 근무표 원본</div>
-      <div style="display:flex;gap:6px">
-        <label for="fi2" class="btn btn-sm bp" style="cursor:pointer;padding:7px 12px;font-size:12px">업로드 / 교체</label>
-        <input type="file" id="fi2" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" onchange="hfile(event)">
-        <button class="btn btn-sm" id="reanalyze-btn" style="display:none;font-size:12px" onclick="doAI()">🤖 재분석</button>
-      </div>
+      <label for="fi2" class="btn btn-sm bp" style="cursor:pointer;padding:7px 12px;font-size:12px">업로드 / 교체</label>
+      <input type="file" id="fi2" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" onchange="hfile(event)">
     </div>
     <div class="ref-card" id="ref-card">
       <div class="ref-empty" id="ref-empty">
@@ -272,12 +282,44 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       </div>
       <img class="ref-img" id="ref-img" style="display:none;width:100%;border-radius:var(--rr)">
     </div>
-    <!-- AI result -->
-    <div id="ai-section" style="display:none;margin-top:10px">
+
+    <!-- QUICK INPUT PANEL: shown after image upload -->
+    <div id="quick-panel" style="display:none;margin-top:12px">
       <div class="card" style="padding:12px">
-        <div id="ai-status"></div>
-        <div id="ai-res" class="ai-res" style="display:none"></div>
-        <button class="btn btn-full bp" id="apply-btn" style="display:none;margin-top:10px" onclick="applyAI()">✅ 캘린더에 적용</button>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">⚡ 빠른 근무표 입력</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:10px">위 근무표 보면서 날짜별로 탭해서 입력하세요</div>
+
+        <!-- year/month selector for quick input -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <select id="qi-yr" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:13px;background:var(--sur2);outline:none">
+            <option value="2026">2026년</option>
+            <option value="2027">2027년</option>
+          </select>
+          <select id="qi-mo" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:13px;background:var(--sur2);outline:none">
+            <option value="0">1월</option><option value="1">2월</option><option value="2">3월</option>
+            <option value="3">4월</option><option value="4" selected>5월</option><option value="5">6월</option>
+            <option value="6">7월</option><option value="7">8월</option><option value="8">9월</option>
+            <option value="9">10월</option><option value="10">11월</option><option value="11">12월</option>
+          </select>
+          <button class="btn btn-sm bp" onclick="buildQuickGrid()">달력 불러오기</button>
+        </div>
+
+        <!-- quick grid -->
+        <div id="qi-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px"></div>
+
+        <!-- type buttons legend -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;padding:8px;background:var(--sur2);border-radius:8px">
+          <span style="font-size:10px;color:var(--t3);width:100%;margin-bottom:3px">탭해서 유형 선택 →</span>
+          <span class="qi-leg" style="background:#FFD6D6;color:#C0392B">D</span>
+          <span class="qi-leg" style="background:#D6F0F0;color:#0F6E56">E</span>
+          <span class="qi-leg" style="background:#E0E0E0;color:#444">N¹</span>
+          <span class="qi-leg" style="background:#E0E0E0;color:#444">N²</span>
+          <span class="qi-leg" style="background:#E8D5F5;color:#6A1B9A">교육</span>
+          <span class="qi-leg" style="background:#FFF3CD;color:#856404">OFF</span>
+          <span class="qi-leg" style="background:#F5F5F5;color:#9E9E9E">-</span>
+        </div>
+
+        <button class="btn btn-full bp" onclick="applyQuick()">✅ 캘린더에 적용</button>
       </div>
     </div>
   </div>
@@ -774,113 +816,102 @@ function saveDay(){
 
 function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();}
 
-// ===== UPLOAD & AI =====
+// ===== UPLOAD (이미지 표시만, AI 없음) =====
 function hfile(e){
   const f=e.target.files[0];
   if(f) procFile(f);
-  e.target.value=''; // reset so same file can be re-uploaded
+  e.target.value='';
 }
 function procFile(file){
   const r=new FileReader();
   r.onload=ev=>{
     refB64=ev.target.result;
-    // Show image in calendar page ref section
     document.getElementById('ref-img').src=refB64;
     document.getElementById('ref-img').style.display='block';
     document.getElementById('ref-empty').style.display='none';
-    document.getElementById('reanalyze-btn').style.display='inline-flex';
-    document.getElementById('ai-section').style.display='block';
-    // Switch to cal tab and scroll down to image
+    document.getElementById('quick-panel').style.display='block';
+    // 현재 보고 있는 연/월로 qi 셀렉터 맞추기
+    document.getElementById('qi-yr').value=CY;
+    document.getElementById('qi-mo').value=CM;
+    buildQuickGrid();
+    // 스크롤 다운
     showPage('cal',null);
-    document.querySelectorAll('.tab')[0].classList.add('on');
-    document.querySelectorAll('.tab').forEach((t,i)=>i!==0&&t.classList.remove('on'));
-    setTimeout(()=>{
-      document.getElementById('ref-card').scrollIntoView({behavior:'smooth',block:'start'});
-    },100);
-    doAI();
+    document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===0));
+    setTimeout(()=>document.getElementById('ref-card').scrollIntoView({behavior:'smooth',block:'start'}),100);
   };
   r.readAsDataURL(file);
 }
 
-function clearRef(){
-  refB64=null;
-  document.getElementById('ref-img').style.display='none';
-  document.getElementById('ref-img').src='';
-  document.getElementById('ref-empty').style.display='block';
-  document.getElementById('reanalyze-btn').style.display='none';
-  document.getElementById('ai-section').style.display='none';
-}
+// ===== QUICK INPUT GRID =====
+const QI_TYPES=['','D','E','N1','N2','EDU','OFF']; // cycle order
+const qiState={}; // 'YYYY-MM-DD': type string
 
-async function doAI(){
-  if(!refB64) return;
-  document.getElementById('ai-section').style.display='block';
-  document.getElementById('ai-status').innerHTML='<div class="ai-ld"><div class="spin"></div><span>AI가 근무표를 분석하고 있습니다...</span></div>';
-  document.getElementById('ai-res').style.display='none';
-  document.getElementById('apply-btn').style.display='none';
-  const base64=refB64.split(',')[1];
-  const mt=refB64.split(';')[0].split(':')[1];
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1500,
-        system:`You analyze Korean nurse schedule calendar images. Extract the year, month, and each date's shift type.
-IMPORTANT: The image shows a calendar with a year and month header (e.g. "2026년 5월" or "2026年5月"). Read it carefully.
-Shift types: D(Day/낮), E(Evening/저녁), N(Night/야간 - consecutive 2 days: first=N1, second=N2), EDU(교육/교육일), OFF(rest/heart/empty).
-Heart emoji or 하트 = OFF. N shifts are always consecutive 2 days. Any cell showing "교육" = EDU.
-Respond ONLY with valid JSON, no markdown:
-{"year":2026,"month":5,"schedule":{"1":"N1","2":"N2","3":"OFF","6":"D","15":"EDU"},"notes":"brief note"}
-Keys = day numbers as strings. Include ALL days visible.`,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:mt,data:base64}},
-          {type:'text',text:'What year and month is this schedule for? Extract all dates and shift types.'}
-        ]}]
-      })
-    });
-    const data=await res.json();
-    document.getElementById('ai-status').innerHTML='';
-    const txt=(data.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
-    if(!txt){document.getElementById('ai-status').innerHTML='<div style="color:var(--r);font-size:13px">응답 없음</div>';return;}
-    try{
-      const jm=txt.match(/\{[\s\S]*\}/);
-      if(!jm) throw new Error();
-      aiP=JSON.parse(jm[0]);
-      const entries=Object.entries(aiP.schedule||{});
-      let html=`<b>✅ ${aiP.year}년 ${aiP.month}월 분석 완료</b> (${entries.length}일)<br><br>`;
-      html+=entries.length?entries.map(([d,t])=>`<b>${aiP.month}/${d}</b>:${t}`).join(' &nbsp;'):'데이터 없음';
-      if(aiP.notes) html+=`<br><br><span style="color:var(--t3)">${aiP.notes}</span>`;
-      document.getElementById('ai-res').innerHTML=html;
-      document.getElementById('ai-res').style.display='block';
-      document.getElementById('apply-btn').style.display='block';
-    }catch{
-      aiP={year:CY,month:CM+1,schedule:{}};
-      document.getElementById('ai-res').textContent=txt.slice(0,400);
-      document.getElementById('ai-res').style.display='block';
-      document.getElementById('apply-btn').style.display='block';
-    }
-  }catch(err){
-    document.getElementById('ai-status').innerHTML=`<div style="color:var(--r);font-size:13px">오류: ${err.message}</div>`;
+function buildQuickGrid(){
+  const y=parseInt(document.getElementById('qi-yr').value);
+  const m=parseInt(document.getElementById('qi-mo').value);
+  const g=document.getElementById('qi-grid');
+  g.innerHTML='';
+  // DOW headers
+  ['일','월','화','수','목','금','토'].forEach(d=>{
+    const h=document.createElement('div');
+    h.className='qi-dow';
+    h.textContent=d;
+    if(d==='일') h.style.color='var(--r)';
+    if(d==='토') h.style.color='var(--p)';
+    g.appendChild(h);
+  });
+  const fd=new Date(y,m,1).getDay();
+  const dim=new Date(y,m+1,0).getDate();
+  // empty
+  for(let i=0;i<fd;i++){const e=document.createElement('div');g.appendChild(e);}
+  for(let day=1;day<=dim;day++){
+    const ds=makeDs(y,m,day);
+    const dow=new Date(ds).getDay();
+    const isWknd=dow===0||dow===6||isH(ds);
+    const c=document.createElement('div');
+    // init from existing D data or qiState
+    if(!qiState[ds] && D[ds]) qiState[ds]=D[ds].nurse||'';
+    const cur=qiState[ds]||'';
+    c.className='qi-cell'+(isWknd?' qi-we':'')+(cur?' qi-'+cur:'');
+    c.dataset.ds=ds;
+    c.dataset.iswe=isWknd?'1':'0';
+    // display
+    const dn=document.createElement('div');dn.style.cssText='font-size:11px;font-weight:700';dn.textContent=day;
+    const dt=document.createElement('div');dt.style.cssText='font-size:10px';
+    dt.textContent=cur==='N1'?'N¹':cur==='N2'?'N²':cur==='EDU'?'교육':cur||'-';
+    c.appendChild(dn);c.appendChild(dt);
+    if(!isWknd) c.onclick=()=>cycleQI(ds,c);
+    g.appendChild(c);
   }
 }
 
-function applyAI(){
-  if(!aiP||!aiP.schedule) return;
-  const y=aiP.year||CY, m=(aiP.month||CM+1)-1;
+function cycleQI(ds, cell){
+  const cur=qiState[ds]||'';
+  const idx=QI_TYPES.indexOf(cur);
+  const next=QI_TYPES[(idx+1)%QI_TYPES.length];
+  qiState[ds]=next;
+  // update style
+  QI_TYPES.forEach(t=>t&&cell.classList.remove('qi-'+t));
+  if(next) cell.classList.add('qi-'+next);
+  const dt=cell.querySelectorAll('div')[1];
+  dt.textContent=next==='N1'?'N¹':next==='N2'?'N²':next==='EDU'?'교육':next||'-';
+}
+
+function applyQuick(){
+  const y=parseInt(document.getElementById('qi-yr').value);
+  const m=parseInt(document.getElementById('qi-mo').value);
   let cnt=0;
-  for(const[day,type] of Object.entries(aiP.schedule)){
-    const ds=makeDs(y,m,parseInt(day));
-    D[ds]={nurse:type,sitter:'auto',ah:null,memo:''};cnt++;
+  for(const[ds,type] of Object.entries(qiState)){
+    if(!type) continue;
+    if(!ds.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)) continue;
+    D[ds]={nurse:type,sitter:'auto',ah:D[ds]?.ah||null,memo:D[ds]?.memo||''};
+    cnt++;
   }
-  // Auto-jump to that year/month
   CY=y; CM=m;
   document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
   renderCal();
-  // Scroll back to top of calendar
   window.scrollTo({top:0,behavior:'smooth'});
-  document.getElementById('apply-btn').style.display='none';
-  document.getElementById('ai-status').innerHTML=`<div style="color:var(--g);font-size:13px;font-weight:600">✅ ${y}년 ${m+1}월 ${cnt}일 적용 완료! 위 캘린더를 확인하세요.</div>`;
+  alert(`${y}년 ${m+1}월 ${cnt}일 입력 완료!\n캘린더에 반영됐습니다.`);
 }
 
 // ===== PAGES & TABS =====
