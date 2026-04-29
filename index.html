@@ -79,6 +79,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .nb{font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;display:inline-block;margin-bottom:1px}
 .bD{background:#FFD6D6;color:#C0392B}.bE{background:#D6F0F0;color:#0F6E56}
 .bN{background:#E0E0E0;color:#444}.bOFF{background:#FFF3CD;color:#856404}
+.bEDU{background:#E8D5F5;color:#6A1B9A}
 .cell.adj .nb{opacity:.35}
 .sb{font-size:8px;padding:1px 4px;border-radius:3px;display:block;font-weight:600;line-height:1.4}
 .sm{background:#FFF3E0;color:#E65100}.se{background:#E3F2FD;color:#1565C0}
@@ -216,11 +217,9 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <label>📅</label>
       <input class="date-inp" type="date" id="g-start" oninput="saveInfo()">
     </div>
-    <!-- 업로드 -->
-    <div class="sr-chip upload-chip" onclick="document.getElementById('fi').click()">
-      <label>📤 근무표 업로드</label>
-    </div>
-    <input type="file" id="fi" accept="image/*" style="display:none" onchange="hfile(event)">
+    <!-- 업로드 - mobile friendly label wrapping input -->
+    <label class="sr-chip upload-chip" for="fi" style="cursor:pointer">📤 근무표 업로드</label>
+    <input type="file" id="fi" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" onchange="hfile(event)">
   </div>
 </header>
 
@@ -253,6 +252,34 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <span><span class="nb bN" style="font-size:9px">N¹</span> 오전형</span>
     <span><span class="nb bN" style="font-size:9px">N²</span> 오전+오후</span>
     <span style="margin-left:auto;color:var(--t3)">💡 셀 탭 → 수정</span>
+  </div>
+
+  <!-- REF IMAGE SECTION (below calendar, scroll down) -->
+  <div style="margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--t2)">📷 근무표 원본</div>
+      <div style="display:flex;gap:6px">
+        <label for="fi2" class="btn btn-sm bp" style="cursor:pointer;padding:7px 12px;font-size:12px">업로드 / 교체</label>
+        <input type="file" id="fi2" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" onchange="hfile(event)">
+        <button class="btn btn-sm" id="reanalyze-btn" style="display:none;font-size:12px" onclick="doAI()">🤖 재분석</button>
+      </div>
+    </div>
+    <div class="ref-card" id="ref-card">
+      <div class="ref-empty" id="ref-empty">
+        <div style="font-size:32px;margin-bottom:8px">📷</div>
+        근무표 이미지가 없습니다<br>
+        <label for="fi2" style="display:inline-block;margin-top:12px;padding:10px 20px;background:var(--p);color:#fff;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">이미지 업로드</label>
+      </div>
+      <img class="ref-img" id="ref-img" style="display:none;width:100%;border-radius:var(--rr)">
+    </div>
+    <!-- AI result -->
+    <div id="ai-section" style="display:none;margin-top:10px">
+      <div class="card" style="padding:12px">
+        <div id="ai-status"></div>
+        <div id="ai-res" class="ai-res" style="display:none"></div>
+        <button class="btn btn-full bp" id="apply-btn" style="display:none;margin-top:10px" onclick="applyAI()">✅ 캘린더에 적용</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -290,29 +317,6 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   <div id="post-list"></div>
 </div>
 
-<!-- PAGE 4: REF IMAGE -->
-<div class="page" id="page-ref">
-  <div class="ref-card" id="ref-card">
-    <div class="ref-empty" id="ref-empty">
-      📷 근무표 이미지가 없습니다<br><br>
-      <button class="btn bp" onclick="document.getElementById('fi').click()">이미지 업로드</button>
-    </div>
-    <img class="ref-img" id="ref-img" style="display:none">
-    <div class="ref-actions" id="ref-actions" style="display:none">
-      <button class="btn btn-sm" onclick="document.getElementById('fi').click()" style="flex:1">🔄 교체</button>
-      <button class="btn btn-sm" onclick="doAI()" style="flex:1">🤖 AI 재분석</button>
-      <button class="btn btn-sm br" onclick="clearRef()" style="flex:1">삭제</button>
-    </div>
-  </div>
-  <div id="ai-section" style="display:none">
-    <div class="card">
-      <div class="sec-title">🤖 AI 분석 결과</div>
-      <div id="ai-status"></div>
-      <div id="ai-res" class="ai-res" style="display:none"></div>
-      <button class="btn btn-full bp" id="apply-btn" style="display:none;margin-top:10px" onclick="applyAI()">✅ 캘린더에 적용</button>
-    </div>
-  </div>
-</div>
 
 <!-- BOTTOM TABS -->
 <nav class="tabs">
@@ -324,9 +328,6 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   </button>
   <button class="tab" onclick="showPage('board',this)">
     <span class="tab-ico">📋</span><span class="tab-lbl">게시판</span>
-  </button>
-  <button class="tab" onclick="showPage('ref',this)">
-    <span class="tab-ico">🖼️</span><span class="tab-lbl">근무표 원본</span>
   </button>
 </nav>
 
@@ -371,6 +372,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
         <option value="E">E — Evening (저녁 근무)</option>
         <option value="N1">N¹ — Night 첫째날</option>
         <option value="N2">N² — Night 둘째날</option>
+        <option value="EDU">교육 (오전형 자동 적용)</option>
         <option value="OFF">OFF / 휴무</option>
       </select>
     </div>
@@ -485,12 +487,13 @@ const info=JSON.parse(localStorage.getItem('si')||'{}');
 
 const HOLI={
   '2026-01-01':'신정','2026-02-17':'설연휴','2026-02-18':'설날','2026-02-19':'설연휴',
-  '2026-03-01':'삼일절','2026-05-01':'노동절','2026-05-05':'어린이날','2026-05-15':'부처님오신날',
-  '2026-05-25':'대체공휴일','2026-06-06':'현충일','2026-08-15':'광복절',
+  '2026-03-01':'삼일절','2026-05-01':'노동절','2026-05-05':'어린이날',
+  '2026-05-24':'부처님오신날','2026-05-25':'대체공휴일',
+  '2026-06-06':'현충일','2026-08-15':'광복절',
   '2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴',
   '2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'크리스마스',
   '2027-01-01':'신정','2027-01-28':'설연휴','2027-01-29':'설날','2027-01-30':'설연휴',
-  '2027-03-01':'삼일절','2027-05-01':'노동절','2027-05-05':'어린이날','2027-05-22':'부처님오신날',
+  '2027-03-01':'삼일절','2027-05-01':'노동절','2027-05-05':'어린이날','2027-05-13':'부처님오신날',
   '2027-06-06':'현충일','2027-08-15':'광복절','2027-10-03':'개천절','2027-10-09':'한글날','2027-12-25':'크리스마스',
 };
 
@@ -541,6 +544,7 @@ function getSitter(ds){
   if(n==='E') return 'evening';
   if(n==='N1') return 'morning';
   if(n==='N2') return 'both';
+  if(n==='EDU') return 'morning'; // 교육 → 오전형
   return 'off';
 }
 function defH(ds){
@@ -622,8 +626,8 @@ function mkCell(ds,day,adj){
   if(dd&&dd.nurse){
     const n=dd.nurse;
     const b=document.createElement('span');
-    b.className=`nb b${n==='N1'||n==='N2'?'N':n==='OFF'?'OFF':n}`;
-    b.textContent=n==='N1'?'N¹':n==='N2'?'N²':n;
+    b.className=`nb b${n==='N1'||n==='N2'?'N':n==='OFF'?'OFF':n==='EDU'?'EDU':n}`;
+    b.textContent=n==='N1'?'N¹':n==='N2'?'N²':n==='EDU'?'교육':n;
     c.appendChild(b);
   }
 
@@ -771,17 +775,28 @@ function saveDay(){
 function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();}
 
 // ===== UPLOAD & AI =====
-function hfile(e){const f=e.target.files[0];if(f)procFile(f);}
+function hfile(e){
+  const f=e.target.files[0];
+  if(f) procFile(f);
+  e.target.value=''; // reset so same file can be re-uploaded
+}
 function procFile(file){
   const r=new FileReader();
   r.onload=ev=>{
     refB64=ev.target.result;
-    // Show in ref tab
+    // Show image in calendar page ref section
     document.getElementById('ref-img').src=refB64;
     document.getElementById('ref-img').style.display='block';
     document.getElementById('ref-empty').style.display='none';
-    document.getElementById('ref-actions').style.display='flex';
+    document.getElementById('reanalyze-btn').style.display='inline-flex';
     document.getElementById('ai-section').style.display='block';
+    // Switch to cal tab and scroll down to image
+    showPage('cal',null);
+    document.querySelectorAll('.tab')[0].classList.add('on');
+    document.querySelectorAll('.tab').forEach((t,i)=>i!==0&&t.classList.remove('on'));
+    setTimeout(()=>{
+      document.getElementById('ref-card').scrollIntoView({behavior:'smooth',block:'start'});
+    },100);
     doAI();
   };
   r.readAsDataURL(file);
@@ -792,7 +807,7 @@ function clearRef(){
   document.getElementById('ref-img').style.display='none';
   document.getElementById('ref-img').src='';
   document.getElementById('ref-empty').style.display='block';
-  document.getElementById('ref-actions').style.display='none';
+  document.getElementById('reanalyze-btn').style.display='none';
   document.getElementById('ai-section').style.display='none';
 }
 
@@ -811,16 +826,16 @@ async function doAI(){
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:1500,
-        system:`You analyze Korean nurse schedule calendar images. Extract each date's shift type.
-Shift types: D(Day/낮), E(Evening/저녁), N(Night/야간 - appears as consecutive 2 days, first=N1, second=N2), OFF(rest/heart emoji/empty cell).
-Heart emoji (💛/❤️/하트) = OFF.
-N shifts are always consecutive 2 days: label first occurrence N1, second N2.
-Respond ONLY with valid JSON, no markdown, no explanation:
-{"year":2026,"month":5,"schedule":{"1":"N1","2":"N2","3":"OFF","5":"OFF","6":"D"},"notes":"brief note"}
-Keys = day numbers as strings. Include ALL days you can identify.`,
+        system:`You analyze Korean nurse schedule calendar images. Extract the year, month, and each date's shift type.
+IMPORTANT: The image shows a calendar with a year and month header (e.g. "2026년 5월" or "2026年5月"). Read it carefully.
+Shift types: D(Day/낮), E(Evening/저녁), N(Night/야간 - consecutive 2 days: first=N1, second=N2), EDU(교육/교육일), OFF(rest/heart/empty).
+Heart emoji or 하트 = OFF. N shifts are always consecutive 2 days. Any cell showing "교육" = EDU.
+Respond ONLY with valid JSON, no markdown:
+{"year":2026,"month":5,"schedule":{"1":"N1","2":"N2","3":"OFF","6":"D","15":"EDU"},"notes":"brief note"}
+Keys = day numbers as strings. Include ALL days visible.`,
         messages:[{role:'user',content:[
           {type:'image',source:{type:'base64',media_type:mt,data:base64}},
-          {type:'text',text:'Analyze this nurse schedule and extract every date with its shift type.'}
+          {type:'text',text:'What year and month is this schedule for? Extract all dates and shift types.'}
         ]}]
       })
     });
@@ -833,8 +848,8 @@ Keys = day numbers as strings. Include ALL days you can identify.`,
       if(!jm) throw new Error();
       aiP=JSON.parse(jm[0]);
       const entries=Object.entries(aiP.schedule||{});
-      let html=`<b>✅ ${aiP.year}년 ${aiP.month}월 분석 완료</b><br><br>`;
-      html+=entries.length?entries.map(([d,t])=>`<b>${aiP.month}/${d}</b> : ${t}`).join('&nbsp; &nbsp;'):'데이터 없음';
+      let html=`<b>✅ ${aiP.year}년 ${aiP.month}월 분석 완료</b> (${entries.length}일)<br><br>`;
+      html+=entries.length?entries.map(([d,t])=>`<b>${aiP.month}/${d}</b>:${t}`).join(' &nbsp;'):'데이터 없음';
       if(aiP.notes) html+=`<br><br><span style="color:var(--t3)">${aiP.notes}</span>`;
       document.getElementById('ai-res').innerHTML=html;
       document.getElementById('ai-res').style.display='block';
@@ -852,31 +867,26 @@ Keys = day numbers as strings. Include ALL days you can identify.`,
 
 function applyAI(){
   if(!aiP||!aiP.schedule) return;
-  const y=aiP.year||CY,m=(aiP.month||CM+1)-1;
+  const y=aiP.year||CY, m=(aiP.month||CM+1)-1;
   let cnt=0;
   for(const[day,type] of Object.entries(aiP.schedule)){
     const ds=makeDs(y,m,parseInt(day));
     D[ds]={nurse:type,sitter:'auto',ah:null,memo:''};cnt++;
   }
-  CY=y;CM=m;
-  document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',b.textContent==y));
-  showPage('cal',document.querySelector('.tab'));
+  // Auto-jump to that year/month
+  CY=y; CM=m;
+  document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
   renderCal();
-  document.querySelectorAll('.tab')[0].click();
-  alert(`${y}년 ${m+1}월 근무표 ${cnt}일 적용 완료!\n셀을 탭해서 수정할 수 있습니다.`);
+  // Scroll back to top of calendar
+  window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('apply-btn').style.display='none';
+  document.getElementById('ai-status').innerHTML=`<div style="color:var(--g);font-size:13px;font-weight:600">✅ ${y}년 ${m+1}월 ${cnt}일 적용 완료! 위 캘린더를 확인하세요.</div>`;
 }
 
 // ===== PAGES & TABS =====
 function showPage(name, btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById('page-'+name).classList.add('on');
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  if(btn){
-    const tabs=document.querySelectorAll('.tab');
-    const names=['cal','wage','board','ref'];
-    const idx=names.indexOf(name);
-    if(idx>=0) tabs[idx].classList.add('on');
-  }
   const fab=document.getElementById('fab');
   fab.classList.toggle('show',name==='board');
   if(name==='wage') calcRange();
@@ -885,7 +895,7 @@ function showPage(name, btn){
 
 function goToCal(){
   showPage('cal',null);
-  document.querySelectorAll('.tab')[0].classList.add('on');
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===0));
 }
 
 function openTimeSettings(){document.getElementById('ov-time').classList.add('show');}
@@ -950,7 +960,7 @@ document.querySelectorAll('.ov').forEach(ov=>ov.addEventListener('click',e=>{if(
 
 // Tab clicks
 document.querySelectorAll('.tab').forEach((tab,i)=>{
-  const names=['cal','wage','board','ref'];
+  const names=['cal','wage','board'];
   tab.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
     tab.classList.add('on');
