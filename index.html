@@ -34,9 +34,6 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .sr-chip input.name-inp{color:var(--t);width:80px}
 .sr-chip input.date-inp{color:var(--t);width:90px}
 .sr-chip span{font-size:11px;color:var(--t2)}
-.upload-chip{background:var(--p);border-color:var(--p);cursor:pointer}
-.upload-chip label{color:#fff;cursor:pointer}
-.time-chip{background:var(--sur2)}
 
 /* ===== BOTTOM TABS ===== */
 .tabs{position:fixed;bottom:0;left:0;right:0;background:var(--sur);border-top:1px solid var(--bd);display:flex;z-index:50;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
@@ -536,81 +533,162 @@ let CY=2026,CM=4;
 let rS=null,rE=null;
 let editDs=null,vIdx=null;
 let selSitter='auto';
-let aiP={};
-let refB64=null;
 const D={};
 let posts=[];
-const info=JSON.parse(localStorage.getItem('si')||'{}');
 
-// ===== FIREBASE CONFIG =====
-const FB_URL='https://babysitter-fd9d4-default-rtdb.firebaseio.com';
+// ===== SUPABASE CONFIG =====
+const SB_URL='https://ejoeucgpreyttjjsdnjz.supabase.co';
+const SB_KEY='sb_publishable_VA4_bH5nAj67mSRugshGVg_CCFhTC5-';
+const EDGE_FN=`${SB_URL}/functions/v1/analyze-schedule`;
 
-async function fbGet(path){
-  try{
-    const r=await fetch(`${FB_URL}/${path}.json`);
-    return await r.json();
-  }catch(e){return null;}
-}
-async function fbSet(path,data){
-  try{
-    await fetch(`${FB_URL}/${path}.json`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(data)
-    });
-  }catch(e){console.error('fbSet error',e);}
-}
-async function fbPush(path,data){
-  try{
-    const r=await fetch(`${FB_URL}/${path}.json`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(data)
-    });
-    return await r.json();
-  }catch(e){return null;}
-}
+const sbHeaders={
+  'Content-Type':'application/json',
+  'apikey': SB_KEY,
+  'Authorization': `Bearer ${SB_KEY}`,
+  'Prefer': 'return=representation'
+};
 
-// D(dayData) 저장/로드
+// ===== SUPABASE CRUD =====
+
+// 근무 데이터 저장 (upsert)
 async function saveD(){
-  await fbSet('dayData', D);
+  const rows = Object.entries(D).map(([date_key, v])=>({
+    date_key,
+    nurse: v.nurse||null,
+    sitter: v.sitter||'auto',
+    actual_hours: v.ah??null,
+    memo: v.memo||null
+  }));
+  if(!rows.length) return;
+  try{
+    await fetch(`${SB_URL}/rest/v1/day_data`, {
+      method:'POST',
+      headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify(rows)
+    });
+  }catch(e){console.error('saveD error',e);}
 }
+
+// 근무 데이터 로드
 async function loadD(){
-  const data=await fbGet('dayData');
-  if(data) Object.assign(D,data);
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/day_data?select=*`, {headers: sbHeaders});
+    const rows = await r.json();
+    if(Array.isArray(rows)){
+      rows.forEach(row=>{
+        D[row.date_key]={
+          nurse: row.nurse||'',
+          sitter: row.sitter||'auto',
+          ah: row.actual_hours??null,
+          memo: row.memo||''
+        };
+      });
+    }
+  }catch(e){console.error('loadD error',e);}
 }
 
-// posts 저장/로드
-async function savePosts(){
-  await fbSet('posts', posts);
-}
+// 게시글 로드
 async function loadPosts(){
-  const data=await fbGet('posts');
-  if(data) posts=Array.isArray(data)?data:Object.values(data);
-  else posts=[];
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/posts?select=*,comments(*)&order=created_at.asc`, {headers: sbHeaders});
+    const rows = await r.json();
+    if(Array.isArray(rows)){
+      posts = rows.map(p=>({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        author: p.author,
+        tag: p.tag,
+        date: new Date(p.created_at).toLocaleDateString('ko-KR',{year:'numeric',month:'numeric',day:'numeric'}),
+        comments: (p.comments||[]).map(c=>({id:c.id, author:c.author, text:c.text}))
+      }));
+    }
+  }catch(e){console.error('loadPosts error',e);}
 }
 
-// refImages 저장/로드
+// 게시글 저장
+async function savePost(post){
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/posts`, {
+      method:'POST',
+      headers: sbHeaders,
+      body: JSON.stringify({title:post.title, content:post.content, author:post.author, tag:post.tag})
+    });
+    const rows = await r.json();
+    return rows[0];
+  }catch(e){console.error('savePost error',e);return null;}
+}
+
+// 게시글 삭제
+async function deletePost(id){
+  try{
+    await fetch(`${SB_URL}/rest/v1/posts?id=eq.${id}`, {
+      method:'DELETE', headers: sbHeaders
+    });
+  }catch(e){console.error('deletePost error',e);}
+}
+
+// 댓글 저장
+async function saveComment(postId, author, text){
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/comments`, {
+      method:'POST',
+      headers: sbHeaders,
+      body: JSON.stringify({post_id:postId, author, text})
+    });
+    const rows = await r.json();
+    return rows[0];
+  }catch(e){console.error('saveComment error',e);return null;}
+}
+
+// 앱 정보 저장/로드
+async function saveInfo(){
+  const name=document.getElementById('g-name').value;
+  const start=document.getElementById('g-start').value;
+  const rate=document.getElementById('g-rate').value;
+  localStorage.setItem('si',JSON.stringify({name,start,rate}));
+  try{
+    const rows=[
+      {key:'name',value:name},
+      {key:'start',value:start},
+      {key:'rate',value:rate}
+    ];
+    await fetch(`${SB_URL}/rest/v1/app_info`, {
+      method:'POST',
+      headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify(rows)
+    });
+  }catch(e){}
+}
+
+async function loadInfo(){
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/app_info?select=*`, {headers: sbHeaders});
+    const rows = await r.json();
+    if(Array.isArray(rows) && rows.length){
+      const info={};
+      rows.forEach(r=>info[r.key]=r.value);
+      if(info.name) document.getElementById('g-name').value=info.name;
+      if(info.start) document.getElementById('g-start').value=info.start;
+      if(info.rate) document.getElementById('g-rate').value=info.rate;
+      return;
+    }
+  }catch(e){}
+  // fallback to localStorage
+  const saved=JSON.parse(localStorage.getItem('si')||'{}');
+  if(saved.name) document.getElementById('g-name').value=saved.name;
+  if(saved.start) document.getElementById('g-start').value=saved.start;
+  if(saved.rate) document.getElementById('g-rate').value=saved.rate;
+}
+
+// 이미지는 localStorage (용량 문제로 DB 저장 제외)
 const refImages={};
 async function saveRefImages(){
-  // 이미지는 용량이 크므로 키만 저장하고 실제 이미지는 localStorage에
-  localStorage.setItem('refImgs', JSON.stringify(refImages));
-  await fbSet('refImageKeys', Object.keys(refImages));
+  try{ localStorage.setItem('refImgs', JSON.stringify(refImages)); }catch(e){}
 }
 async function loadRefImages(){
   const saved=localStorage.getItem('refImgs');
-  if(saved) Object.assign(refImages, JSON.parse(saved));
-}
-
-// info 저장
-function saveInfo(){
-  const v={
-    name:document.getElementById('g-name').value,
-    start:document.getElementById('g-start').value,
-    rate:document.getElementById('g-rate').value
-  };
-  localStorage.setItem('si',JSON.stringify(v));
-  fbSet('info',v);
+  if(saved) try{ Object.assign(refImages, JSON.parse(saved)); }catch(e){}
 }
 
 const HOLI={
@@ -626,19 +704,6 @@ const HOLI={
 };
 
 // (초기 데이터 없음 - 근무표 업로드 후 직접 입력)
-
-// Restore info
-if(info.name) document.getElementById('g-name').value=info.name;
-if(info.start) document.getElementById('g-start').value=info.start;
-if(info.rate) document.getElementById('g-rate').value=info.rate;
-
-function saveInfo(){
-  localStorage.setItem('si',JSON.stringify({
-    name:document.getElementById('g-name').value,
-    start:document.getElementById('g-start').value,
-    rate:document.getElementById('g-rate').value
-  }));
-}
 
 // ===== HELPERS =====
 function tm(id){const v=document.getElementById(id).value,[h,m]=v.split(':').map(Number);return h*60+m}
@@ -892,9 +957,7 @@ function saveDay(){
 function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();saveD();}
 
 // ===== SUPABASE + AI CONFIG =====
-const SB_URL = 'https://ejoeucgpreyttjjsdnjz.supabase.co';
-const SB_KEY = 'sb_publishable_VA4_bH5nAj67mSRugshGVg_CCFhTC5-';
-const EDGE_FN = `${SB_URL}/functions/v1/analyze-schedule`;
+// (설정은 상단에 이미 선언됨)
 
 // ===== UPLOAD - 월별 누적 저장 =====
 let curRefKey = null;
@@ -1129,18 +1192,30 @@ function renderBoard(){
       <div class="pmeta"><span>${p.author||'익명'}</span><span>${p.date}</span><span>💬 ${(p.comments||[]).length}</span></div>
     </div>`;}).join('');
 }
+
 function openWrite(){document.getElementById('ov-wr').classList.add('show');}
-function subPost(){
+
+async function subPost(){
   const t=document.getElementById('ptit').value.trim(),b=document.getElementById('pbody').value.trim();
   if(!t||!b){alert('제목과 내용을 입력해주세요.');return;}
-  const n=new Date();
-  posts.push({title:t,content:b,author:document.getElementById('pauth').value.trim()||'익명',
-    tag:document.getElementById('ptag').value,date:`${n.getFullYear()}.${n.getMonth()+1}.${n.getDate()}`,comments:[]});
-  savePosts();
+  const post={
+    title:t, content:b,
+    author:document.getElementById('pauth').value.trim()||'익명',
+    tag:document.getElementById('ptag').value
+  };
+  const saved = await savePost(post);
+  if(saved){
+    posts.push({
+      id:saved.id, title:saved.title, content:saved.content,
+      author:saved.author, tag:saved.tag, comments:[],
+      date: new Date(saved.created_at).toLocaleDateString('ko-KR',{year:'numeric',month:'numeric',day:'numeric'})
+    });
+  }
   document.getElementById('ov-wr').classList.remove('show');
   ['ptit','pbody','pauth'].forEach(id=>document.getElementById(id).value='');
   renderBoard();
 }
+
 function viewPost(i){
   vIdx=i;const p=posts[i];
   const tm2={notice:'📢 공지',schedule:'📅 근무관련',general:'💬 일반'};
@@ -1150,23 +1225,31 @@ function viewPost(i){
   renderCmts(p.comments||[]);
   document.getElementById('ov-pv').classList.add('show');
 }
+
 function renderCmts(cs){
   document.getElementById('pvcmts').innerHTML=cs.length
     ?cs.map(c=>`<div class="cmt"><div class="cmt-a">${c.author}</div><div class="cmt-t">${c.text}</div></div>`).join('')
     :'<div style="font-size:12px;color:var(--t3);margin-bottom:8px">첫 댓글을 남겨보세요!</div>';
 }
-function addCmt(){
+
+async function addCmt(){
   const t=document.getElementById('ct').value.trim();if(!t)return;
-  posts[vIdx].comments=posts[vIdx].comments||[];
-  posts[vIdx].comments.push({author:document.getElementById('ca').value.trim()||'익명',text:t});
-  savePosts();
-  renderCmts(posts[vIdx].comments);
+  const author=document.getElementById('ca').value.trim()||'익명';
+  const p=posts[vIdx];
+  const saved = await saveComment(p.id, author, t);
+  if(saved){
+    posts[vIdx].comments=posts[vIdx].comments||[];
+    posts[vIdx].comments.push({id:saved.id, author:saved.author, text:saved.text});
+    renderCmts(posts[vIdx].comments);
+  }
   document.getElementById('ct').value='';
 }
-function delPost(){
+
+async function delPost(){
   if(!confirm('삭제하시겠습니까?'))return;
+  const p=posts[vIdx];
+  await deletePost(p.id);
   posts.splice(vIdx,1);
-  savePosts();
   document.getElementById('ov-pv').classList.remove('show');
   renderBoard();
 }
@@ -1186,22 +1269,15 @@ document.querySelectorAll('.tab').forEach((tab,i)=>{
 
 // ===== INIT =====
 async function init(){
-  // 로딩 표시
   document.getElementById('cgrid').innerHTML='<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--t3);font-size:13px">⏳ 데이터 불러오는 중...</div>';
 
-  // Firebase에서 데이터 로드
-  await Promise.all([loadD(), loadPosts(), loadRefImages()]);
+  // Supabase에서 데이터 로드
+  await Promise.all([loadD(), loadPosts(), loadRefImages(), loadInfo()]);
 
   // 날짜 설정
   const n=new Date(),y=n.getFullYear(),mo=String(n.getMonth()+1).padStart(2,'0');
   document.getElementById('ws').value=`${y}-${mo}-01`;
   document.getElementById('we').value=`${y}-${mo}-${new Date(y,n.getMonth()+1,0).getDate()}`;
-
-  // 사용자 정보 복원
-  const savedInfo=JSON.parse(localStorage.getItem('si')||'{}');
-  if(savedInfo.name) document.getElementById('g-name').value=savedInfo.name;
-  if(savedInfo.start) document.getElementById('g-start').value=savedInfo.start;
-  if(savedInfo.rate) document.getElementById('g-rate').value=savedInfo.rate;
 
   // 업로드 모달 연/월 이벤트
   document.getElementById('up-yr').addEventListener('change', updateUploadLabel);
