@@ -891,6 +891,11 @@ function saveDay(){
 
 function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();saveD();}
 
+// ===== SUPABASE + AI CONFIG =====
+const SB_URL = 'https://ejoeucgpreyttjjsdnjz.supabase.co';
+const SB_KEY = 'sb_publishable_VA4_bH5nAj67mSRugshGVg_CCFhTC5-';
+const EDGE_FN = `${SB_URL}/functions/v1/analyze-schedule`;
+
 // ===== UPLOAD - 월별 누적 저장 =====
 let curRefKey = null;
 
@@ -921,14 +926,73 @@ function hfile(e){
     saveRefImages();
     showRefImage(key);
     curRefKey = key;
-    document.getElementById('quick-panel').style.display = 'block';
-    document.getElementById('qi-monthlabel').textContent = `${y}년 ${m+1}월 근무표`;
-    buildQuickGrid(y, m);
+    // AI 분석 시작
     showPage('cal', null);
     document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===0));
     setTimeout(()=>document.getElementById('ref-card').scrollIntoView({behavior:'smooth',block:'start'}),150);
+    doAI(ev.target.result, y, m);
   };
   r.readAsDataURL(f);
+}
+
+async function doAI(dataUrl, y, m){
+  const key = `${y}-${String(m+1).padStart(2,'0')}`;
+  // AI 분석 상태 표시
+  document.getElementById('quick-panel').style.display = 'block';
+  document.getElementById('qi-monthlabel').textContent = `⏳ AI가 ${y}년 ${m+1}월 근무표를 분석하고 있습니다...`;
+  document.getElementById('qi-grid').innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--t3)"><div class="spin" style="margin:0 auto 8px"></div>분석 중...</div>';
+
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const mediaType = dataUrl.split(';')[0].split(':')[1];
+
+    const res = await fetch(EDGE_FN, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SB_KEY}`
+      },
+      body: JSON.stringify({ image: base64, mediaType })
+    });
+
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+
+    const txt = data.result || '';
+    const jm = txt.match(/\{[\s\S]*\}/);
+    if(!jm) throw new Error('분석 결과를 읽을 수 없어요');
+
+    const parsed = JSON.parse(jm[0]);
+    const schedule = parsed.schedule || {};
+    let cnt = 0;
+
+    // 파싱된 데이터를 D에 적용
+    for(const [day, type] of Object.entries(schedule)){
+      const ds = makeDs(y, m, parseInt(day));
+      D[ds] = { nurse: type, sitter: 'auto', ah: D[ds]?.ah||null, memo: D[ds]?.memo||'' };
+      cnt++;
+    }
+
+    // qiState도 업데이트
+    for(const [day, type] of Object.entries(schedule)){
+      const ds = makeDs(y, m, parseInt(day));
+      qiState[ds] = type;
+    }
+
+    CY = y; CM = m;
+    document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
+    renderCal();
+    saveD();
+
+    // 빠른 입력 패널 - 더블체크용으로 표시
+    document.getElementById('qi-monthlabel').textContent = `✅ AI 분석 완료 — ${y}년 ${m+1}월 (${cnt}일) · 틀린 날짜는 탭해서 수정하세요`;
+    buildQuickGrid(y, m);
+
+  } catch(err) {
+    document.getElementById('qi-monthlabel').textContent = `❌ 분석 실패: ${err.message}`;
+    document.getElementById('qi-grid').innerHTML = '';
+    buildQuickGrid(y, m);
+  }
 }
 
 function showRefImage(key){
