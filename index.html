@@ -230,9 +230,6 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <label>📅</label>
       <input class="date-inp" type="date" id="g-start" oninput="saveInfo()">
     </div>
-    <!-- 업로드 - mobile friendly label wrapping input -->
-    <label class="sr-chip upload-chip" for="fi" style="cursor:pointer">📤 근무표 업로드</label>
-    <input type="file" id="fi" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" onchange="hfile(event)">
   </div>
 </header>
 
@@ -271,8 +268,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   <div style="margin-top:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:13px;font-weight:700;color:var(--t2)">📷 근무표 원본</div>
-      <label for="fi2" class="btn btn-sm bp" style="cursor:pointer;padding:7px 12px;font-size:12px">📤 이번 달 업로드</label>
-      <input type="file" id="fi2" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" onchange="hfile(event)">
+      <button class="btn btn-sm bp" style="padding:7px 12px;font-size:12px" onclick="openUploadModal()">📤 근무표 업로드</button>
     </div>
 
     <!-- 월별 이미지 탭 -->
@@ -282,7 +278,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <div class="ref-empty" id="ref-empty">
         <div style="font-size:32px;margin-bottom:8px">📷</div>
         근무표 이미지가 없습니다<br>
-        <label for="fi2" style="display:inline-block;margin-top:12px;padding:10px 20px;background:var(--p);color:#fff;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">이미지 업로드</label>
+        <div style="font-size:12px;color:var(--t3);margin-top:8px">위 📤 근무표 업로드 버튼을 눌러주세요</div>
       </div>
       <div id="ref-img-label" style="display:none;font-size:11px;color:var(--t3);padding:6px 10px;background:var(--sur2);border-radius:8px 8px 0 0;text-align:center;font-weight:600"></div>
       <img class="ref-img" id="ref-img" style="display:none;width:100%;border-radius:0 0 var(--rr) var(--rr)">
@@ -364,18 +360,18 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
   <div class="mdl" style="max-width:340px;margin:0 auto">
     <div class="mdl-drag"></div>
     <h3>📤 근무표 업로드</h3>
-    <div class="mdl-sub">몇 월 근무표인지 선택하세요</div>
+    <div class="mdl-sub">업로드할 근무표의 연도와 월을 선택하세요</div>
     <div style="display:flex;gap:8px">
       <div class="fld" style="flex:1">
         <label>연도</label>
-        <select id="up-yr" style="-webkit-appearance:none">
+        <select id="up-yr" onchange="updateUploadLabel()" style="-webkit-appearance:none;font-size:16px;font-weight:700;color:var(--p)">
           <option value="2026">2026년</option>
           <option value="2027">2027년</option>
         </select>
       </div>
       <div class="fld" style="flex:1">
         <label>월</label>
-        <select id="up-mo" style="-webkit-appearance:none">
+        <select id="up-mo" onchange="updateUploadLabel()" style="-webkit-appearance:none;font-size:16px;font-weight:700;color:var(--p)">
           <option value="0">1월</option><option value="1">2월</option><option value="2">3월</option>
           <option value="3">4월</option><option value="4">5월</option><option value="5">6월</option>
           <option value="6">7월</option><option value="7">8월</option><option value="8">9월</option>
@@ -383,8 +379,10 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
         </select>
       </div>
     </div>
+    <div id="up-preview-label" style="text-align:center;padding:10px;background:var(--pl);border-radius:10px;font-size:14px;font-weight:700;color:var(--p);margin-bottom:4px"></div>
     <div class="ma">
-      <button class="btn btn-full bp" onclick="confirmUpload()">✅ 확인 & 업로드</button>
+      <label class="btn btn-full bp" for="fi-modal" style="cursor:pointer;justify-content:center">✅ 이 달 근무표 선택하기</label>
+      <input type="file" id="fi-modal" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" onchange="hfile(event)">
       <button class="btn btn-full" onclick="document.getElementById('ov-upload').classList.remove('show')">취소</button>
     </div>
   </div>
@@ -541,8 +539,79 @@ let selSitter='auto';
 let aiP={};
 let refB64=null;
 const D={};
-const posts=JSON.parse(localStorage.getItem('sp2')||'[]');
+let posts=[];
 const info=JSON.parse(localStorage.getItem('si')||'{}');
+
+// ===== FIREBASE CONFIG =====
+const FB_URL='https://babysitter-fd9d4-default-rtdb.firebaseio.com';
+
+async function fbGet(path){
+  try{
+    const r=await fetch(`${FB_URL}/${path}.json`);
+    return await r.json();
+  }catch(e){return null;}
+}
+async function fbSet(path,data){
+  try{
+    await fetch(`${FB_URL}/${path}.json`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+  }catch(e){console.error('fbSet error',e);}
+}
+async function fbPush(path,data){
+  try{
+    const r=await fetch(`${FB_URL}/${path}.json`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+    return await r.json();
+  }catch(e){return null;}
+}
+
+// D(dayData) 저장/로드
+async function saveD(){
+  await fbSet('dayData', D);
+}
+async function loadD(){
+  const data=await fbGet('dayData');
+  if(data) Object.assign(D,data);
+}
+
+// posts 저장/로드
+async function savePosts(){
+  await fbSet('posts', posts);
+}
+async function loadPosts(){
+  const data=await fbGet('posts');
+  if(data) posts=Array.isArray(data)?data:Object.values(data);
+  else posts=[];
+}
+
+// refImages 저장/로드
+const refImages={};
+async function saveRefImages(){
+  // 이미지는 용량이 크므로 키만 저장하고 실제 이미지는 localStorage에
+  localStorage.setItem('refImgs', JSON.stringify(refImages));
+  await fbSet('refImageKeys', Object.keys(refImages));
+}
+async function loadRefImages(){
+  const saved=localStorage.getItem('refImgs');
+  if(saved) Object.assign(refImages, JSON.parse(saved));
+}
+
+// info 저장
+function saveInfo(){
+  const v={
+    name:document.getElementById('g-name').value,
+    start:document.getElementById('g-start').value,
+    rate:document.getElementById('g-rate').value
+  };
+  localStorage.setItem('si',JSON.stringify(v));
+  fbSet('info',v);
+}
 
 const HOLI={
   '2026-01-01':'신정','2026-02-17':'설연휴','2026-02-18':'설날','2026-02-19':'설연휴',
@@ -556,19 +625,7 @@ const HOLI={
   '2027-06-06':'현충일','2027-08-15':'광복절','2027-10-03':'개천절','2027-10-09':'한글날','2027-12-25':'크리스마스',
 };
 
-// Init May 2026
-(()=>{
-  const s={
-    '2026-04-26':'OFF','2026-04-27':'E','2026-04-28':'E','2026-04-29':'E','2026-04-30':'OFF',
-    '2026-05-01':'N1','2026-05-02':'N2','2026-05-03':'OFF','2026-05-04':'OFF','2026-05-05':'OFF',
-    '2026-05-06':'D','2026-05-07':'D','2026-05-08':'D','2026-05-09':'D','2026-05-10':'OFF',
-    '2026-05-11':'N1','2026-05-12':'N2','2026-05-13':'OFF','2026-05-14':'OFF','2026-05-15':'EDU',
-    '2026-05-16':'OFF','2026-05-17':'D','2026-05-18':'D','2026-05-19':'D','2026-05-20':'OFF',
-    '2026-05-21':'OFF','2026-05-22':'E','2026-05-23':'E','2026-05-24':'OFF','2026-05-25':'OFF',
-    '2026-05-26':'D','2026-05-27':'D','2026-05-28':'E','2026-05-29':'E','2026-05-30':'OFF','2026-05-31':'N1'
-  };
-  for(const[k,v] of Object.entries(s)) D[k]={nurse:v,sitter:'auto',ah:null,memo:''};
-})();
+// (초기 데이터 없음 - 근무표 업로드 후 직접 입력)
 
 // Restore info
 if(info.name) document.getElementById('g-name').value=info.name;
@@ -829,32 +886,31 @@ function saveDay(){
   document.getElementById('ov-day').classList.remove('show');
   renderCal();
   if(rS) calcRange();
+  saveD();
 }
 
-function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();}
+function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();saveD();}
 
 // ===== UPLOAD - 월별 누적 저장 =====
-// refImages: { 'YYYY-MM': base64 }
-const refImages = JSON.parse(localStorage.getItem('refImgs') || '{}');
-let curRefKey = null; // 현재 보고 있는 이미지의 'YYYY-MM' 키
+let curRefKey = null;
 
-function hfile(e){
-  const f=e.target.files[0];
-  if(f) procFile(f);
-  e.target.value='';
-}
-
-function procFile(file){
-  // 먼저 연/월 선택 모달 열기
-  pendingFile = file;
-  // 현재 보고 있는 월로 기본 설정
+function openUploadModal(){
   document.getElementById('up-yr').value = CY;
   document.getElementById('up-mo').value = CM;
+  updateUploadLabel();
   document.getElementById('ov-upload').classList.add('show');
 }
 
-function confirmUpload(){
-  if(!pendingFile) return;
+function updateUploadLabel(){
+  const y = document.getElementById('up-yr').value;
+  const m = parseInt(document.getElementById('up-mo').value)+1;
+  document.getElementById('up-preview-label').textContent = `📅 ${y}년 ${m}월 근무표`;
+}
+
+function hfile(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  e.target.value = '';
   const y = parseInt(document.getElementById('up-yr').value);
   const m = parseInt(document.getElementById('up-mo').value);
   const key = `${y}-${String(m+1).padStart(2,'0')}`;
@@ -862,9 +918,8 @@ function confirmUpload(){
   const r = new FileReader();
   r.onload = ev => {
     refImages[key] = ev.target.result;
-    localStorage.setItem('refImgs', JSON.stringify(refImages));
+    saveRefImages();
     showRefImage(key);
-    // 빠른 입력 패널 열기
     curRefKey = key;
     document.getElementById('quick-panel').style.display = 'block';
     document.getElementById('qi-monthlabel').textContent = `${y}년 ${m+1}월 근무표`;
@@ -873,8 +928,7 @@ function confirmUpload(){
     document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===0));
     setTimeout(()=>document.getElementById('ref-card').scrollIntoView({behavior:'smooth',block:'start'}),150);
   };
-  r.readAsDataURL(pendingFile);
-  pendingFile = null;
+  r.readAsDataURL(f);
 }
 
 function showRefImage(key){
@@ -888,12 +942,10 @@ function showRefImage(key){
     const [y, m] = key.split('-');
     document.getElementById('ref-img-label').style.display = 'block';
     document.getElementById('ref-img-label').textContent = `📅 ${y}년 ${parseInt(m)}월 근무표`;
-    // 빠른 입력 패널도 해당 월로
     document.getElementById('quick-panel').style.display = 'block';
     document.getElementById('qi-monthlabel').textContent = `${y}년 ${parseInt(m)}월 근무표`;
     buildQuickGrid(parseInt(y), parseInt(m)-1);
   }
-  // 탭 활성화
   document.querySelectorAll('.ref-tab').forEach(t=>{
     t.style.background = t.dataset.key === key ? 'var(--p)' : 'var(--sur2)';
     t.style.color = t.dataset.key === key ? '#fff' : 'var(--t2)';
@@ -920,7 +972,6 @@ function renderRefTabs(){
 // ===== QUICK INPUT GRID =====
 const QI_TYPES=['','D','E','N1','N2','EDU','OFF'];
 const qiState={};
-let pendingFile = null;
 
 function buildQuickGrid(y, m){
   if(y===undefined) y=CY;
@@ -980,6 +1031,7 @@ function applyQuick(){
   document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
   renderCal();
   window.scrollTo({top:0,behavior:'smooth'});
+  saveD();
   alert(`${y}년 ${m+1}월 ${cnt}일 입력 완료!`);
 }
 
@@ -1020,7 +1072,7 @@ function subPost(){
   const n=new Date();
   posts.push({title:t,content:b,author:document.getElementById('pauth').value.trim()||'익명',
     tag:document.getElementById('ptag').value,date:`${n.getFullYear()}.${n.getMonth()+1}.${n.getDate()}`,comments:[]});
-  localStorage.setItem('sp2',JSON.stringify(posts));
+  savePosts();
   document.getElementById('ov-wr').classList.remove('show');
   ['ptit','pbody','pauth'].forEach(id=>document.getElementById(id).value='');
   renderBoard();
@@ -1043,14 +1095,14 @@ function addCmt(){
   const t=document.getElementById('ct').value.trim();if(!t)return;
   posts[vIdx].comments=posts[vIdx].comments||[];
   posts[vIdx].comments.push({author:document.getElementById('ca').value.trim()||'익명',text:t});
-  localStorage.setItem('sp2',JSON.stringify(posts));
+  savePosts();
   renderCmts(posts[vIdx].comments);
   document.getElementById('ct').value='';
 }
 function delPost(){
   if(!confirm('삭제하시겠습니까?'))return;
   posts.splice(vIdx,1);
-  localStorage.setItem('sp2',JSON.stringify(posts));
+  savePosts();
   document.getElementById('ov-pv').classList.remove('show');
   renderBoard();
 }
@@ -1069,16 +1121,38 @@ document.querySelectorAll('.tab').forEach((tab,i)=>{
 });
 
 // ===== INIT =====
-renderCal();
-renderBoard();
-const n=new Date(),y=n.getFullYear(),mo=String(n.getMonth()+1).padStart(2,'0');
-document.getElementById('ws').value=`${y}-${mo}-01`;
-document.getElementById('we').value=`${y}-${mo}-${new Date(y,n.getMonth()+1,0).getDate()}`;
-// 저장된 이미지 복원
-if(Object.keys(refImages).length){
-  const lastKey=Object.keys(refImages).sort().pop();
-  showRefImage(lastKey);
+async function init(){
+  // 로딩 표시
+  document.getElementById('cgrid').innerHTML='<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--t3);font-size:13px">⏳ 데이터 불러오는 중...</div>';
+
+  // Firebase에서 데이터 로드
+  await Promise.all([loadD(), loadPosts(), loadRefImages()]);
+
+  // 날짜 설정
+  const n=new Date(),y=n.getFullYear(),mo=String(n.getMonth()+1).padStart(2,'0');
+  document.getElementById('ws').value=`${y}-${mo}-01`;
+  document.getElementById('we').value=`${y}-${mo}-${new Date(y,n.getMonth()+1,0).getDate()}`;
+
+  // 사용자 정보 복원
+  const savedInfo=JSON.parse(localStorage.getItem('si')||'{}');
+  if(savedInfo.name) document.getElementById('g-name').value=savedInfo.name;
+  if(savedInfo.start) document.getElementById('g-start').value=savedInfo.start;
+  if(savedInfo.rate) document.getElementById('g-rate').value=savedInfo.rate;
+
+  // 업로드 모달 연/월 이벤트
+  document.getElementById('up-yr').addEventListener('change', updateUploadLabel);
+  document.getElementById('up-mo').addEventListener('change', updateUploadLabel);
+
+  // 저장된 이미지 복원
+  if(Object.keys(refImages).length){
+    const lastKey=Object.keys(refImages).sort().pop();
+    showRefImage(lastKey);
+  }
+
+  renderCal();
+  renderBoard();
 }
+init();
 </script>
 </body>
 </html>
