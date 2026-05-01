@@ -519,10 +519,34 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       </div>
     </div>
     <div class="ma" style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
         <button class="btn br" onclick="delPost()">삭제</button>
+        <button class="btn" onclick="openEditPost()">수정</button>
         <button class="btn bp" onclick="document.getElementById('ov-pv').classList.remove('show')">닫기</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- POST EDIT MODAL -->
+<div class="ov" id="ov-edit">
+  <div class="mdl" style="max-width:480px;margin:0 auto">
+    <div class="mdl-drag"></div>
+    <h3>✏️ 글 수정</h3>
+    <div style="height:8px"></div>
+    <div class="fld">
+      <label>분류</label>
+      <select id="etag">
+        <option value="notice">📢 공지</option>
+        <option value="schedule">📅 근무 관련</option>
+        <option value="general">💬 일반</option>
+      </select>
+    </div>
+    <div class="fld"><label>제목</label><input type="text" id="etit" placeholder="제목"></div>
+    <div class="fld"><label>내용</label><textarea id="ebody" rows="5" placeholder="내용"></textarea></div>
+    <div class="ma">
+      <button class="btn btn-full bp" onclick="submitEditPost()">수정 완료</button>
+      <button class="btn btn-full" onclick="document.getElementById('ov-edit').classList.remove('show')">취소</button>
     </div>
   </div>
 </div>
@@ -1317,6 +1341,35 @@ async function delPost(){
   posts.splice(vIdx,1);
   document.getElementById('ov-pv').classList.remove('show');
   renderBoard();
+}
+
+function openEditPost(){
+  const p=posts[vIdx];
+  document.getElementById('etag').value=p.tag||'general';
+  document.getElementById('etit').value=p.title||'';
+  document.getElementById('ebody').value=p.content||'';
+  document.getElementById('ov-edit').classList.add('show');
+}
+
+async function submitEditPost(){
+  const t=document.getElementById('etit').value.trim();
+  const b=document.getElementById('ebody').value.trim();
+  if(!t||!b){alert('제목과 내용을 입력해주세요.');return;}
+  const p=posts[vIdx];
+  try{
+    await fetch(`${SB_URL}/rest/v1/posts?id=eq.${p.id}`,{
+      method:'PATCH',
+      headers:sbHeaders,
+      body:JSON.stringify({title:t,content:b,tag:document.getElementById('etag').value})
+    });
+    posts[vIdx].title=t;
+    posts[vIdx].content=b;
+    posts[vIdx].tag=document.getElementById('etag').value;
+    document.getElementById('ov-edit').classList.remove('show');
+    // 뷰 모달도 업데이트
+    viewPost(vIdx);
+    renderBoard();
+  }catch(e){alert('수정 실패: '+e.message);}
 }
 
 // Close overlays on backdrop click
