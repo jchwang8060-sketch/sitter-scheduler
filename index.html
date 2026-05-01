@@ -769,27 +769,7 @@ async function saveRefImageToSupabase(key, dataUrl){
 }
 
 async function loadRefImages(){
-  // Try Supabase Storage first
-  try{
-    const r = await fetch(`${SB_URL}/storage/v1/object/list/schedule-images/schedules`, {
-      method: 'POST',
-      headers: {
-        ...sbHeaders,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({prefix:'', limit:100})
-    });
-    const files = await r.json();
-    if(Array.isArray(files) && files.length){
-      for(const f of files){
-        const key = f.name.replace(/\.(jpg|png|jpeg)$/,'');
-        const imgUrl = `${SB_URL}/storage/v1/object/public/schedule-images/schedules/${f.name}`;
-        refImages[key] = imgUrl;
-      }
-      return;
-    }
-  }catch(e){ console.error('loadRefImages storage error', e); }
-  // Fallback to localStorage
+  // localStorage에서 이미지 로드
   const saved=localStorage.getItem('refImgs');
   if(saved) try{ Object.assign(refImages, JSON.parse(saved)); }catch(e){}
 }
@@ -973,6 +953,7 @@ function calcRange(){
   const e=rE||document.getElementById('we').value||s;
   if(!s){document.getElementById('sinf').textContent='날짜를 캘린더에서 선택하세요';return;}
   document.getElementById('sinf').textContent=`${fds(s)} ~ ${fds(e)}`;
+  const r=rate();
   let days=0,tot=0,actualTot=0;const rows=[];
   const cur=new Date(s);const end=new Date(e);
   while(cur<=end){
