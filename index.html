@@ -311,7 +311,13 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <div class="stat-grid">
       <div class="stat"><div class="sl">총 근무일</div><div class="sv" id="sd">0<span class="su">일</span></div></div>
       <div class="stat"><div class="sl">총 근무시간</div><div class="sv" id="sh">0<span class="su">h</span></div></div>
-      <div class="stat full hi"><div class="sl">예상 급여</div><div class="sv" id="sw">0<span class="su">원</span></div></div>
+      <div class="stat full hi"><div class="sl">예상 급여 (시급 기준)</div><div class="sv" id="sw">0<span class="su">원</span></div></div>
+    </div>
+    <!-- 실제 지급 급여 (실제 근무시간 기반 자동 계산) -->
+    <div style="margin-top:10px;padding:12px;background:var(--gl);border-radius:10px;border:1.5px solid var(--g)">
+      <div style="font-size:12px;font-weight:700;color:var(--g);margin-bottom:6px">💵 실제 지급 급여 (실제 근무시간 기준)</div>
+      <div class="sv" id="sw-actual" style="font-size:22px;font-weight:700;color:var(--g)">0<span class="su">원</span></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px" id="sw-actual-detail"></div>
     </div>
     <div class="period-row">
       <div class="fld"><label>시작일</label><input type="date" id="ws" oninput="byDate()"></div>
@@ -585,11 +591,19 @@ async function saveD(){
   }));
   if(!rows.length) return;
   try{
-    await fetch(`${SB_URL}/rest/v1/day_data`, {
+    const res = await fetch(`${SB_URL}/rest/v1/day_data`, {
       method:'POST',
-      headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      headers:{
+        ...sbHeaders,
+        'Prefer':'resolution=merge-duplicates,return=minimal',
+        'Content-Type':'application/json'
+      },
       body: JSON.stringify(rows)
     });
+    if(!res.ok){
+      const err = await res.text();
+      console.error('saveD failed:', res.status, err);
+    }
   }catch(e){console.error('saveD error',e);}
 }
 
@@ -959,7 +973,7 @@ function calcRange(){
   const e=rE||document.getElementById('we').value||s;
   if(!s){document.getElementById('sinf').textContent='날짜를 캘린더에서 선택하세요';return;}
   document.getElementById('sinf').textContent=`${fds(s)} ~ ${fds(e)}`;
-  const r=rate();let days=0,tot=0;const rows=[];
+  let days=0,tot=0,actualTot=0;const rows=[];
   const cur=new Date(s);const end=new Date(e);
   while(cur<=end){
     const ds=cur.toISOString().slice(0,10);
@@ -969,13 +983,17 @@ function calcRange(){
     const nl=dd?(dd.nurse==='N1'?'N¹':dd.nurse==='N2'?'N²':dd.nurse||'-'):'-';
     let stl='휴무';
     if(!isWE(ds)&&!isH(ds)){if(st==='morning')stl='오전형';else if(st==='evening')stl='오후형';else if(st==='both')stl='오전+오후';}
-    if(ah>0){days++;tot+=ah;}
+    if(ah>0){days++;tot+=dh;actualTot+=ah;}
     rows.push({ds,nl,stl,dh,ah,pay:Math.round(ah*r)});
     cur.setDate(cur.getDate()+1);
   }
   document.getElementById('sd').innerHTML=`${days}<span class="su">일</span>`;
   document.getElementById('sh').innerHTML=`${tot.toFixed(1)}<span class="su">h</span>`;
   document.getElementById('sw').innerHTML=`${Math.round(tot*r).toLocaleString()}<span class="su">원</span>`;
+  // 실제 급여 = 실제 근무시간 × 시급
+  const actualWage = Math.round(actualTot*r);
+  document.getElementById('sw-actual').innerHTML=`${actualWage.toLocaleString()}<span class="su">원</span>`;
+  document.getElementById('sw-actual-detail').textContent=`실제 근무 ${actualTot.toFixed(1)}h × ${r.toLocaleString()}원`;
   document.getElementById('dtb').innerHTML=rows.map(row=>`
     <tr style="${row.ah>0?'':'color:var(--t3)'}">
       <td>${fds(row.ds)}</td>
@@ -1027,7 +1045,7 @@ function handleClick(ds){
   renderCal();
 }
 
-function saveDay(){
+async function saveDay(){
   if(!editDs) return;
   const hv=document.getElementById('ehr').value;
   const mv=parseInt(document.getElementById('emin').value)||0;
@@ -1040,7 +1058,7 @@ function saveDay(){
   document.getElementById('ov-day').classList.remove('show');
   renderCal();
   if(rS) calcRange();
-  saveD();
+  await saveD();
 }
 
 function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();saveD();}
@@ -1273,8 +1291,15 @@ function renderBoard(){
   const l=document.getElementById('post-list');
   if(!posts.length){l.innerHTML='<div class="empty-b">아직 게시물이 없습니다<br><br><button class="btn bp" onclick="openWrite()">✏️ 첫 글쓰기</button></div>';return;}
   const tm2={notice:'<span class="ptag tn">📢 공지</span>',schedule:'<span class="ptag ts">📅 근무관련</span>',general:'<span class="ptag tg">💬 일반</span>'};
-  l.innerHTML=posts.slice().reverse().map((p,ri)=>{const i=posts.length-1-ri;return`
-    <div class="post-card" onclick="viewPost(${i})">
+  // 공지 최상단, 나머지는 최신순
+  const sorted = [...posts].sort((a,b)=>{
+    if(a.tag==='notice' && b.tag!=='notice') return -1;
+    if(a.tag!=='notice' && b.tag==='notice') return 1;
+    return posts.indexOf(b) - posts.indexOf(a);
+  });
+  l.innerHTML=sorted.map((p)=>{
+    const i=posts.indexOf(p);
+    return`<div class="post-card" onclick="viewPost(${i})">
       ${tm2[p.tag]||''}
       <div class="ptitl">${p.title}</div>
       <div class="pprev">${p.content}</div>
