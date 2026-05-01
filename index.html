@@ -406,7 +406,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     </div>
     <div style="font-size:11px;color:var(--t3);margin-top:4px">오전+오후형 = 오전 + 오후 시간의 합산</div>
     <div class="ma">
-      <button class="btn btn-full bp" onclick="document.getElementById('ov-time').classList.remove('show');renderCal();">확인</button>
+      <button class="btn btn-full bp" onclick="document.getElementById('ov-time').classList.remove('show');saveInfo();renderCal();">확인</button>
     </div>
   </div>
 </div>
@@ -646,12 +646,20 @@ async function saveInfo(){
   const name=document.getElementById('g-name').value;
   const start=document.getElementById('g-start').value;
   const rate=document.getElementById('g-rate').value;
-  localStorage.setItem('si',JSON.stringify({name,start,rate}));
+  const ms=document.getElementById('ms').value;
+  const me=document.getElementById('me').value;
+  const es=document.getElementById('es').value;
+  const ee=document.getElementById('ee').value;
+  localStorage.setItem('si',JSON.stringify({name,start,rate,ms,me,es,ee}));
   try{
     const rows=[
       {key:'name',value:name},
       {key:'start',value:start},
-      {key:'rate',value:rate}
+      {key:'rate',value:rate},
+      {key:'ms',value:ms},
+      {key:'me',value:me},
+      {key:'es',value:es},
+      {key:'ee',value:ee}
     ];
     await fetch(`${SB_URL}/rest/v1/app_info`, {
       method:'POST',
@@ -671,22 +679,79 @@ async function loadInfo(){
       if(info.name) document.getElementById('g-name').value=info.name;
       if(info.start) document.getElementById('g-start').value=info.start;
       if(info.rate) document.getElementById('g-rate').value=info.rate;
+      if(info.ms) document.getElementById('ms').value=info.ms;
+      if(info.me) document.getElementById('me').value=info.me;
+      if(info.es) document.getElementById('es').value=info.es;
+      if(info.ee) document.getElementById('ee').value=info.ee;
       return;
     }
   }catch(e){}
-  // fallback to localStorage
   const saved=JSON.parse(localStorage.getItem('si')||'{}');
   if(saved.name) document.getElementById('g-name').value=saved.name;
   if(saved.start) document.getElementById('g-start').value=saved.start;
   if(saved.rate) document.getElementById('g-rate').value=saved.rate;
+  if(saved.ms) document.getElementById('ms').value=saved.ms;
+  if(saved.me) document.getElementById('me').value=saved.me;
+  if(saved.es) document.getElementById('es').value=saved.es;
+  if(saved.ee) document.getElementById('ee').value=saved.ee;
 }
 
 // 이미지는 localStorage (용량 문제로 DB 저장 제외)
 const refImages={};
+
 async function saveRefImages(){
+  // localStorage backup
   try{ localStorage.setItem('refImgs', JSON.stringify(refImages)); }catch(e){}
 }
+
+async function saveRefImageToSupabase(key, dataUrl){
+  try{
+    // Convert base64 to blob
+    const base64 = dataUrl.split(',')[1];
+    const mimeType = dataUrl.split(';')[0].split(':')[1];
+    const byteChars = atob(base64);
+    const byteArr = new Uint8Array(byteChars.length);
+    for(let i=0;i<byteChars.length;i++) byteArr[i]=byteChars.charCodeAt(i);
+    const blob = new Blob([byteArr], {type: mimeType});
+    const ext = mimeType.includes('png')?'png':'jpg';
+    const filePath = `schedules/${key}.${ext}`;
+
+    // Upload to Supabase Storage
+    await fetch(`${SB_URL}/storage/v1/object/schedule-images/${filePath}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SB_KEY}`,
+        'apikey': SB_KEY,
+        'Content-Type': mimeType,
+        'x-upsert': 'true'
+      },
+      body: blob
+    });
+  }catch(e){ console.error('saveRefImage error', e); }
+}
+
 async function loadRefImages(){
+  // Try Supabase Storage first
+  try{
+    const r = await fetch(`${SB_URL}/storage/v1/object/list/schedule-images/schedules`, {
+      method: 'POST',
+      headers: {
+        ...sbHeaders,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({prefix:'', limit:100})
+    });
+    const files = await r.json();
+    if(Array.isArray(files) && files.length){
+      for(const f of files){
+        const key = f.name.replace(/\.(jpg|png|jpeg)$/,'');
+        const imgUrl = `${SB_URL}/storage/v1/object/public/schedule-images/schedules/${f.name}`;
+        refImages[key] = imgUrl;
+      }
+      return;
+    }
+  }catch(e){ console.error('loadRefImages storage error', e); }
+  // Fallback to localStorage
   const saved=localStorage.getItem('refImgs');
   if(saved) try{ Object.assign(refImages, JSON.parse(saved)); }catch(e){}
 }
