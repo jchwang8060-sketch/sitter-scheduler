@@ -903,7 +903,7 @@ function renderCal(){
   const fd=new Date(CY,CM,1).getDay();
   const dim=new Date(CY,CM+1,0).getDate();
   const prevDim=new Date(CY,CM,0).getDate();
-  const today=new Date().toISOString().slice(0,10);
+  const today=(()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
   const re=rE||rS;
 
   // Previous month trailing days
