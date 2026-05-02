@@ -65,7 +65,8 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .cell:nth-child(7n){border-right:none}
 .cell.adj{background:var(--sur2)} /* adjacent month */
 .cell:not(.adj):hover{background:var(--pl)}
-.cell.today .cdt{background:var(--p);color:#fff}
+.cell.today .cdt{background:var(--p);color:#fff;z-index:2;position:relative}
+.cell.today.sel-e .cdt{background:var(--p);color:#fff}
 .cell.sel{background:rgba(79,126,247,.08)}
 .cell.sel-e{background:var(--pl);outline:2px solid var(--p);outline-offset:-1px;z-index:1}
 .cdt{font-size:11px;font-weight:600;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:1px}
