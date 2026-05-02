@@ -591,12 +591,13 @@ async function saveD(){
   }));
   if(!rows.length) return;
   try{
-    const res = await fetch(`${SB_URL}/rest/v1/day_data`, {
+    const res = await fetch(`${SB_URL}/rest/v1/day_data?on_conflict=date_key`, {
       method:'POST',
       headers:{
-        ...sbHeaders,
-        'Prefer':'resolution=merge-duplicates,return=minimal',
-        'Content-Type':'application/json'
+        'Content-Type':'application/json',
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Prefer':'resolution=merge-duplicates,return=minimal'
       },
       body: JSON.stringify(rows)
     });
