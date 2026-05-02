@@ -787,34 +787,60 @@ async function saveRefImages(){
 
 async function saveRefImageToSupabase(key, dataUrl){
   try{
-    // Convert base64 to blob
-    const base64 = dataUrl.split(',')[1];
-    const mimeType = dataUrl.split(';')[0].split(':')[1];
-    const byteChars = atob(base64);
-    const byteArr = new Uint8Array(byteChars.length);
+    const base64=dataUrl.split(',')[1];
+    const mimeType=dataUrl.split(';')[0].split(':')[1];
+    const byteChars=atob(base64);
+    const byteArr=new Uint8Array(byteChars.length);
     for(let i=0;i<byteChars.length;i++) byteArr[i]=byteChars.charCodeAt(i);
-    const blob = new Blob([byteArr], {type: mimeType});
-    const ext = mimeType.includes('png')?'png':'jpg';
-    const filePath = `schedules/${key}.${ext}`;
-
-    // Upload to Supabase Storage
-    await fetch(`${SB_URL}/storage/v1/object/schedule-images/${filePath}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SB_KEY}`,
-        'apikey': SB_KEY,
-        'Content-Type': mimeType,
-        'x-upsert': 'true'
+    const blob=new Blob([byteArr],{type:mimeType});
+    const ext=mimeType.includes('png')?'png':'jpg';
+    const filePath=`${key}.${ext}`;
+    const res=await fetch(`${SB_URL}/storage/v1/object/schedule-images/${filePath}`,{
+      method:'POST',
+      headers:{
+        'Authorization':`Bearer ${SB_KEY}`,
+        'apikey':SB_KEY,
+        'Content-Type':mimeType,
+        'x-upsert':'true'
       },
-      body: blob
+      body:blob
     });
-  }catch(e){ console.error('saveRefImage error', e); }
+    if(res.ok){
+      // Storage URL로 교체
+      const pubUrl=`${SB_URL}/storage/v1/object/public/schedule-images/${filePath}`;
+      refImages[key]=pubUrl;
+      localStorage.setItem('refImgs',JSON.stringify(refImages));
+      console.log('Image uploaded to Supabase:', pubUrl);
+    } else {
+      console.error('Storage upload failed:', await res.text());
+    }
+  }catch(e){console.error('saveRefImageToSupabase error',e);}
 }
 
 async function loadRefImages(){
-  // localStorage에서 이미지 로드
+  // Supabase Storage에서 목록 조회
+  try{
+    const res=await fetch(`${SB_URL}/storage/v1/object/list/schedule-images`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SB_KEY,
+        'Authorization':`Bearer ${SB_KEY}`
+      },
+      body:JSON.stringify({prefix:'',limit:50,sortBy:{column:'name',order:'asc'}})
+    });
+    const files=await res.json();
+    if(Array.isArray(files)&&files.length){
+      files.forEach(f=>{
+        const key=f.name.replace(/\.(jpg|jpeg|png)$/i,'');
+        refImages[key]=`${SB_URL}/storage/v1/object/public/schedule-images/${f.name}`;
+      });
+      return;
+    }
+  }catch(e){console.error('loadRefImages error',e);}
+  // fallback localStorage
   const saved=localStorage.getItem('refImgs');
-  if(saved) try{ Object.assign(refImages, JSON.parse(saved)); }catch(e){}
+  if(saved) try{Object.assign(refImages,JSON.parse(saved));}catch(e){}
 }
 
 const HOLI={
@@ -1141,7 +1167,8 @@ function hfile(e){
   const r = new FileReader();
   r.onload = ev => {
     refImages[key] = ev.target.result;
-    saveRefImages();
+    // Supabase Storage에 업로드
+    saveRefImageToSupabase(key, ev.target.result);
     showRefImage(key);
     curRefKey = key;
     // AI 분석 시작
