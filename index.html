@@ -1061,7 +1061,7 @@ function calcRange(){
     const nl=dd?(dd.nurse==='N1'?'N¹':dd.nurse==='N2'?'N²':dd.nurse||'-'):'-';
     let stl='휴무';
     if(!isWE(ds)&&!isH(ds)){if(st==='morning')stl='오전형';else if(st==='evening')stl='오후형';else if(st==='both')stl='오전+오후';}
-    if(ah>0){days++;tot+=dh;}
+    if(ah>0){days++;tot+=ah;}
     rows.push({ds,nl,stl,dh,ah,pay:Math.round(ah*r)});
     cur.setDate(cur.getDate()+1);
   }
