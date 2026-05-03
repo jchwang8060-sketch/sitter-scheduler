@@ -351,11 +351,11 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <div class="stat"><div class="sl">총 근무시간</div><div class="sv" id="sh">0<span class="su">h</span></div></div>
       <div class="stat full hi"><div class="sl">예상 급여 (시급 기준)</div><div class="sv" id="sw">0<span class="su">원</span></div></div>
     </div>
-    <!-- 실제 지급 급여 (실제 근무시간 × 시급 자동계산) -->
+    <!-- 실제 지급 급여 (수기 입력 실제 근무시간 × 시급) -->
     <div style="margin-top:10px;padding:12px;background:var(--gl);border-radius:10px;border:1.5px solid var(--g)">
-      <div style="font-size:12px;font-weight:700;color:var(--g);margin-bottom:6px">💵 실제 지급 급여 (실제 근무시간 기준)</div>
+      <div style="font-size:12px;font-weight:700;color:var(--g);margin-bottom:6px">💵 실제 지급 급여</div>
       <div class="sv" id="sw-actual" style="font-size:22px;font-weight:700;color:var(--g)">0<span class="su">원</span></div>
-      <div style="font-size:11px;color:var(--t3);margin-top:4px" id="sw-actual-detail"></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px" id="sw-actual-detail">캘린더에서 실제 근무시간을 입력하면 자동 계산됩니다</div>
     </div>
     <div class="period-row">
       <div class="fld"><label>시작일</label><input type="date" id="ws" oninput="byDate()"></div>
@@ -1063,6 +1063,21 @@ function calcRange(){
   document.getElementById('sd').innerHTML=`${days}<span class="su">일</span>`;
   document.getElementById('sh').innerHTML=`${tot.toFixed(1)}<span class="su">h</span>`;
   document.getElementById('sw').innerHTML=`${Math.round(tot*r).toLocaleString()}<span class="su">원</span>`;
+  // 실제 근무시간 합산 (수기 입력한 날만)
+  let actualTot = 0;
+  rows.forEach(row => {
+    const dd = D[row.ds];
+    if(dd && dd.ah !== null && dd.ah !== undefined && dd.ah > 0) actualTot += dd.ah;
+  });
+  const actualWage = Math.round(actualTot * r);
+  if(actualTot > 0){
+    document.getElementById('sw-actual').innerHTML = actualWage.toLocaleString() + '<span class="su">원</span>';
+    document.getElementById('sw-actual-detail').textContent = '실제 근무 ' + actualTot.toFixed(1) + 'h × ' + r.toLocaleString() + '원';
+  } else {
+    document.getElementById('sw-actual').innerHTML = '0<span class="su">원</span>';
+    document.getElementById('sw-actual-detail').textContent = '캘린더에서 실제 근무시간을 입력하면 자동 계산됩니다';
+  }
+
   document.getElementById('dtb').innerHTML=rows.map(row=>`
     <tr style="${row.ah>0?'':'color:var(--t3)'}">
       <td>${fds(row.ds)}</td>
