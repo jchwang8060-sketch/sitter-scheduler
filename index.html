@@ -351,11 +351,16 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
       <div class="stat"><div class="sl">총 근무시간</div><div class="sv" id="sh">0<span class="su">h</span></div></div>
       <div class="stat full hi"><div class="sl">예상 급여 (시급 기준)</div><div class="sv" id="sw">0<span class="su">원</span></div></div>
     </div>
-    <!-- 실제 지급 급여 (실제 근무시간 자동계산) -->
+    <!-- 실제 지급 급여 (수기 입력) -->
     <div style="margin-top:10px;padding:12px;background:var(--gl);border-radius:10px;border:1.5px solid var(--g)">
-      <div style="font-size:12px;font-weight:700;color:var(--g);margin-bottom:6px">💵 실제 지급 급여 (실제 근무시간 기준)</div>
-      <div class="sv" id="sw-actual" style="font-size:22px;font-weight:700;color:var(--g)">0<span class="su">원</span></div>
-      <div style="font-size:11px;color:var(--t3);margin-top:4px" id="sw-actual-detail">캘린더에서 실제 근무시간 입력 시 자동 계산</div>
+      <div style="font-size:12px;font-weight:700;color:var(--g);margin-bottom:8px">💵 실제 지급 급여 (수기 입력)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="actual-wage" placeholder="0" step="1000" min="0"
+          style="flex:1;padding:9px 12px;border:1.5px solid var(--g);border-radius:9px;font-family:inherit;font-size:15px;font-weight:700;color:var(--g);outline:none;background:#fff"
+          oninput="saveActualWage()">
+        <span style="font-size:14px;font-weight:600;color:var(--t2)">원</span>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:5px">* 실제 지급한 금액을 직접 입력하세요</div>
     </div>
     <div class="period-row">
       <div class="fld"><label>시작일</label><input type="date" id="ws" oninput="byDate()"></div>
@@ -898,7 +903,7 @@ function renderCal(){
   const fd=new Date(CY,CM,1).getDay();
   const dim=new Date(CY,CM+1,0).getDate();
   const prevDim=new Date(CY,CM,0).getDate();
-  const today=(()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+  const today=(()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`})();
   const re=rE||rS;
 
   // Previous month trailing days
@@ -1013,7 +1018,32 @@ function nextM(){CM++;if(CM>11){CM=0;CY++;}renderCal();}
 function byDate(){const s=document.getElementById('ws').value,e=document.getElementById('we').value;if(!s)return;rS=s;rE=e||s;renderCal();}
 function onRate(){saveInfo();calcRange();}
 
+async function saveActualWage(){
+  const val=document.getElementById('actual-wage').value||'0';
+  const s=document.getElementById('ws').value;
+  const e=document.getElementById('we').value||s;
+  if(!s) return;
+  const key=`actual_wage_${s}_${e}`;
+  try{
+    await fetch(`${SB_URL}/rest/v1/app_info?on_conflict=key`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify([{key,value:val}])
+    });
+  }catch(e2){console.error('saveActualWage error',e2);}
+}
 
+async function loadActualWage(){
+  const s=document.getElementById('ws').value;
+  const e=document.getElementById('we').value||s;
+  if(!s){document.getElementById('actual-wage').value='';return;}
+  const key=`actual_wage_${s}_${e}`;
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/app_info?key=eq.${encodeURIComponent(key)}&select=value`,{headers:sbHeaders});
+    const rows=await r.json();
+    document.getElementById('actual-wage').value=(Array.isArray(rows)&&rows.length)?rows[0].value:'';
+  }catch(e2){document.getElementById('actual-wage').value='';}
+}
 
 function calcRange(){
   const s=rS||document.getElementById('ws').value;
@@ -1038,29 +1068,6 @@ function calcRange(){
   document.getElementById('sd').innerHTML=`${days}<span class="su">일</span>`;
   document.getElementById('sh').innerHTML=`${tot.toFixed(1)}<span class="su">h</span>`;
   document.getElementById('sw').innerHTML=`${Math.round(tot*r).toLocaleString()}<span class="su">원</span>`;
-  // 실제 근무시간 합산 (수기 입력한 날만)
-  let actualTot = 0;
-  rows.forEach(row => {
-    const dd = D[row.ds];
-    if(dd && dd.ah !== null && dd.ah !== undefined && dd.ah > 0) actualTot += dd.ah;
-  });
-  const actualWage = Math.round(actualTot * r);
-  if(actualTot > 0){
-    document.getElementById('sw-actual').innerHTML = actualWage.toLocaleString() + '<span class="su">원</span>';
-    document.getElementById('sw-actual-detail').textContent = '실제 근무 ' + actualTot.toFixed(1) + 'h × ' + r.toLocaleString() + '원';
-  } else {
-    document.getElementById('sw-actual').innerHTML = '0<span class="su">원</span>';
-    document.getElementById('sw-actual-detail').textContent = '캘린더에서 실제 근무시간을 입력하면 자동 계산됩니다';
-  }
-
-  // 실제 지급 급여: D에서 ah 입력된 날만 기간 내 합산
-  let actualTot=0;
-  Object.entries(D).forEach(([ds,dd])=>{
-    if(dd&&dd.ah!==null&&dd.ah!==undefined&&dd.ah>0&&ds>=s&&ds<=e) actualTot+=dd.ah;
-  });
-  const actualWage=Math.round(actualTot*r);
-  document.getElementById('sw-actual').innerHTML=actualTot>0?`${actualWage.toLocaleString()}<span class="su">원</span>`:`0<span class="su">원</span>`;
-  document.getElementById('sw-actual-detail').textContent=actualTot>0?`실제 근무 ${actualTot.toFixed(1)}h × ${r.toLocaleString()}원`:'캘린더에서 실제 근무시간 입력 시 자동 계산';
   document.getElementById('dtb').innerHTML=rows.map(row=>`
     <tr style="${row.ah>0?'':'color:var(--t3)'}">
       <td>${fds(row.ds)}</td>
@@ -1071,13 +1078,7 @@ function calcRange(){
         ${row.ah>0?row.ah.toFixed(1)+'h':'-'}</td>
       <td style="font-weight:700">${row.pay>0?row.pay.toLocaleString()+'원':'-'}</td>
     </tr>`).join('');
-  // 실제 급여 계산 (실제 근무시간 × 시급)
-  let actualTot = 0;
-  rows.forEach(row => { if(row.ah > 0) actualTot += row.ah; });
-  const actualWage = Math.round(actualTot * r);
-  document.getElementById('sw-actual').innerHTML = actualTot > 0 ? actualWage.toLocaleString() + '<span class="su">원</span>' : '0<span class="su">원</span>';
-  document.getElementById('sw-actual-detail').textContent = actualTot > 0 ? `실제 근무 ${actualTot.toFixed(1)}h × ${r.toLocaleString()}원` : '';
-
+  loadActualWage();
 }
 
 // ===== DAY EDIT =====
