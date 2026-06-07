@@ -111,7 +111,6 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .btn:active{opacity:.8}
 .bp{background:var(--p);color:#fff;border-color:var(--p)}
 .br{color:var(--r);border-color:var(--r)}
-.bg{background:var(--g);color:#fff;border-color:var(--g)}
 .btn-full{width:100%}
 .btn-sm{padding:8px 12px;font-size:13px;border-radius:8px}
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center}
@@ -127,17 +126,12 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .time-inp{display:flex;align-items:center;gap:5px;flex:1;font-size:13px}
 .time-inp input{flex:1;padding:8px;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:13px;background:var(--sur2);outline:none;text-align:center}
 .time-inp input:focus{border-color:var(--p)}
-.filter-row{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;scrollbar-width:none}
-.filter-row::-webkit-scrollbar{display:none}
-.fpill{padding:6px 12px;border-radius:20px;border:1.5px solid var(--bd);background:var(--sur);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--t2)}
-.fpill.on{background:var(--p);border-color:var(--p);color:#fff}
 .type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
 .type-opt{padding:10px;border:2px solid var(--bd);border-radius:10px;text-align:center;cursor:pointer;transition:.15s}
 .type-opt.on{border-color:var(--p);background:var(--pl)}
 .type-opt-ico{font-size:18px;margin-bottom:2px}
 .type-opt-lbl{font-size:11px;font-weight:600;color:var(--t2)}
 .type-opt.on .type-opt-lbl{color:var(--p)}
-.ai-ld{display:flex;align-items:center;gap:8px;padding:12px;background:var(--sur2);border-radius:10px;font-size:13px;color:var(--t2)}
 .spin{width:16px;height:16px;border:2px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
 @keyframes sp{to{transform:rotate(360deg)}}
 .cmt{background:var(--sur2);border-radius:8px;padding:9px 11px;margin-bottom:6px}
@@ -171,10 +165,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <div style="font-size:18px;font-weight:700;margin-bottom:4px">서인이 시터 스케줄러</div>
     <div style="font-size:13px;color:var(--t2);margin-bottom:24px">비밀번호를 입력하세요</div>
     <div style="display:flex;justify-content:center;gap:12px;margin-bottom:24px" id="pin-dots">
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
     </div>
     <div id="pin-error" style="color:var(--r);font-size:13px;margin-bottom:12px;height:18px"></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
@@ -193,7 +184,6 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     </div>
   </div>
 </div>
-
 <style>
 .pin-dot{width:14px;height:14px;border-radius:50%;background:var(--bd);transition:.15s}
 .pin-dot.on{background:var(--p)}
@@ -201,27 +191,17 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 .pin-btn:active{background:var(--pl);border-color:var(--p)}
 </style>
 
-<!-- STICKY HEADER -->
+<!-- HEADER -->
 <header class="hdr">
   <div class="hdr-top">
     <div class="logo">👶</div>
     <span class="app-nm">서인이 시터 스케줄러</span>
-    <button class="settings-btn" onclick="openTimeSettings()" title="근무 시간 설정">⚙️</button>
+    <button class="settings-btn" onclick="openTimeSettings()">⚙️</button>
   </div>
   <div class="settings-row">
-    <div class="sr-chip">
-      <label>👤</label>
-      <input class="name-inp" type="text" id="g-name" placeholder="근무자명" oninput="saveInfo()">
-    </div>
-    <div class="sr-chip">
-      <label>💰</label>
-      <input type="number" id="g-rate" value="15000" step="500" min="9860" oninput="onRate()">
-      <span>원/h</span>
-    </div>
-    <div class="sr-chip">
-      <label>📅</label>
-      <input class="date-inp" type="date" id="g-start" oninput="saveInfo()">
-    </div>
+    <div class="sr-chip"><label>👤</label><input class="name-inp" type="text" id="g-name" placeholder="근무자명" oninput="saveInfo()"></div>
+    <div class="sr-chip"><label>💰</label><input type="number" id="g-rate" value="15000" step="500" min="9860" oninput="onRate()"><span>원/h</span></div>
+    <div class="sr-chip"><label>📅</label><input class="date-inp" type="date" id="g-start" oninput="saveInfo()"></div>
   </div>
 </header>
 
@@ -265,7 +245,7 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
         <div style="font-size:12px;color:var(--t3);margin-top:8px">위 📤 근무표 업로드 버튼을 눌러주세요</div>
       </div>
       <div id="ref-img-label" style="display:none;font-size:11px;color:var(--t3);padding:6px 10px;background:var(--sur2);border-radius:8px 8px 0 0;text-align:center;font-weight:600"></div>
-      <img class="ref-img" id="ref-img" style="display:none;width:100%;border-radius:0 0 var(--rr) var(--rr)">
+      <img class="ref-img" id="ref-img" style="display:none">
     </div>
     <div id="quick-panel" style="display:none;margin-top:12px">
       <div class="card" style="padding:12px">
@@ -339,12 +319,10 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
     <div class="mdl-sub">업로드할 근무표의 연도와 월을 선택하세요</div>
     <div style="display:flex;gap:8px">
       <div class="fld" style="flex:1"><label>연도</label>
-        <select id="up-yr" style="-webkit-appearance:none;font-size:16px;font-weight:700;color:var(--p)">
-          <option value="2026">2026년</option><option value="2027">2027년</option>
-        </select>
+        <select id="up-yr"><option value="2026">2026년</option><option value="2027">2027년</option></select>
       </div>
       <div class="fld" style="flex:1"><label>월</label>
-        <select id="up-mo" style="-webkit-appearance:none;font-size:16px;font-weight:700;color:var(--p)">
+        <select id="up-mo">
           <option value="0">1월</option><option value="1">2월</option><option value="2">3월</option>
           <option value="3">4월</option><option value="4">5월</option><option value="5">6월</option>
           <option value="6">7월</option><option value="7">8월</option><option value="8">9월</option>
@@ -512,7 +490,11 @@ html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(-
 </div>
 
 <script>
-let CY=2026,CM=4;
+// ===== 마지막으로 본 월 복원 =====
+const savedYM = JSON.parse(localStorage.getItem('cal_ym')||'null');
+let CY = savedYM ? savedYM.y : new Date().getFullYear();
+let CM = savedYM ? savedYM.m : new Date().getMonth();
+
 let rS=null,rE=null;
 let editDs=null,vIdx=null;
 let selSitter='auto';
@@ -522,50 +504,25 @@ let posts=[];
 const SB_URL='https://ejoeucgpreyttjjsdnjz.supabase.co';
 const SB_KEY='sb_publishable_VA4_bH5nAj67mSRugshGVg_CCFhTC5-';
 const EDGE_FN=`${SB_URL}/functions/v1/analyze-schedule`;
-
-const sbHeaders={
-  'Content-Type':'application/json',
-  'apikey': SB_KEY,
-  'Authorization': `Bearer ${SB_KEY}`,
-  'Prefer': 'return=representation'
-};
+const sbHeaders={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Prefer':'return=representation'};
 
 async function saveD(){
   const rows=Object.entries(D).map(([date_key,v])=>({date_key,nurse:v.nurse||null,sitter:v.sitter||'auto',actual_hours:v.ah??null,memo:v.memo||null}));
   if(!rows.length) return;
   try{
     const res=await fetch(`${SB_URL}/rest/v1/day_data?on_conflict=date_key`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)});
-    if(!res.ok){const err=await res.text();console.error('saveD failed:',res.status,err);}
+    if(!res.ok) console.error('saveD failed:',res.status,await res.text());
   }catch(e){console.error('saveD error',e);}
 }
-
 async function loadD(){
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/day_data?select=*`,{headers:sbHeaders});
-    const rows=await r.json();
-    if(Array.isArray(rows)) rows.forEach(row=>{D[row.date_key]={nurse:row.nurse||'',sitter:row.sitter||'auto',ah:row.actual_hours??null,memo:row.memo||''};});
-  }catch(e){console.error('loadD error',e);}
+  try{const r=await fetch(`${SB_URL}/rest/v1/day_data?select=*`,{headers:sbHeaders});const rows=await r.json();if(Array.isArray(rows)) rows.forEach(row=>{D[row.date_key]={nurse:row.nurse||'',sitter:row.sitter||'auto',ah:row.actual_hours??null,memo:row.memo||''};});}catch(e){console.error('loadD error',e);}
 }
-
 async function loadPosts(){
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/posts?select=*,comments(*)&order=created_at.asc`,{headers:sbHeaders});
-    const rows=await r.json();
-    if(Array.isArray(rows)) posts=rows.map(p=>({id:p.id,title:p.title,content:p.content,author:p.author,tag:p.tag,date:new Date(p.created_at).toLocaleDateString('ko-KR',{year:'numeric',month:'numeric',day:'numeric'}),comments:(p.comments||[]).map(c=>({id:c.id,author:c.author,text:c.text}))}));
-  }catch(e){console.error('loadPosts error',e);}
+  try{const r=await fetch(`${SB_URL}/rest/v1/posts?select=*,comments(*)&order=created_at.asc`,{headers:sbHeaders});const rows=await r.json();if(Array.isArray(rows)) posts=rows.map(p=>({id:p.id,title:p.title,content:p.content,author:p.author,tag:p.tag,date:new Date(p.created_at).toLocaleDateString('ko-KR',{year:'numeric',month:'numeric',day:'numeric'}),comments:(p.comments||[]).map(c=>({id:c.id,author:c.author,text:c.text}))}));}catch(e){console.error('loadPosts error',e);}
 }
-
-async function savePost(post){
-  try{const r=await fetch(`${SB_URL}/rest/v1/posts`,{method:'POST',headers:sbHeaders,body:JSON.stringify({title:post.title,content:post.content,author:post.author,tag:post.tag})});const rows=await r.json();return rows[0];}catch(e){return null;}
-}
-
-async function deletePost(id){
-  try{await fetch(`${SB_URL}/rest/v1/posts?id=eq.${id}`,{method:'DELETE',headers:sbHeaders});}catch(e){}
-}
-
-async function saveComment(postId,author,text){
-  try{const r=await fetch(`${SB_URL}/rest/v1/comments`,{method:'POST',headers:sbHeaders,body:JSON.stringify({post_id:postId,author,text})});const rows=await r.json();return rows[0];}catch(e){return null;}
-}
+async function savePost(post){try{const r=await fetch(`${SB_URL}/rest/v1/posts`,{method:'POST',headers:sbHeaders,body:JSON.stringify({title:post.title,content:post.content,author:post.author,tag:post.tag})});const rows=await r.json();return rows[0];}catch(e){return null;}}
+async function deletePost(id){try{await fetch(`${SB_URL}/rest/v1/posts?id=eq.${id}`,{method:'DELETE',headers:sbHeaders});}catch(e){}}
+async function saveComment(postId,author,text){try{const r=await fetch(`${SB_URL}/rest/v1/comments`,{method:'POST',headers:sbHeaders,body:JSON.stringify({post_id:postId,author,text})});const rows=await r.json();return rows[0];}catch(e){return null;}}
 
 async function saveInfo(){
   const name=document.getElementById('g-name').value;
@@ -576,11 +533,8 @@ async function saveInfo(){
   const es=document.getElementById('es').value;
   const ee=document.getElementById('ee').value;
   localStorage.setItem('si',JSON.stringify({name,start,rate,ms,me,es,ee}));
-  try{
-    await fetch(`${SB_URL}/rest/v1/app_info`,{method:'POST',headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([{key:'name',value:name},{key:'start',value:start},{key:'rate',value:rate},{key:'ms',value:ms},{key:'me',value:me},{key:'es',value:es},{key:'ee',value:ee}])});
-  }catch(e){}
+  try{await fetch(`${SB_URL}/rest/v1/app_info`,{method:'POST',headers:{...sbHeaders,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([{key:'name',value:name},{key:'start',value:start},{key:'rate',value:rate},{key:'ms',value:ms},{key:'me',value:me},{key:'es',value:es},{key:'ee',value:ee}])});}catch(e){}
 }
-
 async function loadInfo(){
   try{
     const r=await fetch(`${SB_URL}/rest/v1/app_info?select=*`,{headers:sbHeaders});
@@ -608,33 +562,22 @@ async function loadInfo(){
 }
 
 const refImages={};
-
 async function saveRefImageToSupabase(key,dataUrl){
   try{
-    const base64=dataUrl.split(',')[1];
-    const mimeType=dataUrl.split(';')[0].split(':')[1];
-    const byteChars=atob(base64);
-    const byteArr=new Uint8Array(byteChars.length);
+    const base64=dataUrl.split(',')[1];const mimeType=dataUrl.split(';')[0].split(':')[1];
+    const byteChars=atob(base64);const byteArr=new Uint8Array(byteChars.length);
     for(let i=0;i<byteChars.length;i++) byteArr[i]=byteChars.charCodeAt(i);
     const blob=new Blob([byteArr],{type:mimeType});
     const ext=mimeType.includes('png')?'png':'jpg';
-    const filePath=`${key}.${ext}`;
-    const res=await fetch(`${SB_URL}/storage/v1/object/schedule-images/${filePath}`,{method:'POST',headers:{'Authorization':`Bearer ${SB_KEY}`,'apikey':SB_KEY,'Content-Type':mimeType,'x-upsert':'true'},body:blob});
-    if(res.ok){
-      refImages[key]=`${SB_URL}/storage/v1/object/public/schedule-images/${filePath}`;
-      localStorage.setItem('refImgs',JSON.stringify(refImages));
-    }
+    const res=await fetch(`${SB_URL}/storage/v1/object/schedule-images/${key}.${ext}`,{method:'POST',headers:{'Authorization':`Bearer ${SB_KEY}`,'apikey':SB_KEY,'Content-Type':mimeType,'x-upsert':'true'},body:blob});
+    if(res.ok){refImages[key]=`${SB_URL}/storage/v1/object/public/schedule-images/${key}.${ext}`;localStorage.setItem('refImgs',JSON.stringify(refImages));}
   }catch(e){console.error('saveRefImageToSupabase error',e);}
 }
-
 async function loadRefImages(){
   try{
     const res=await fetch(`${SB_URL}/storage/v1/object/list/schedule-images`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`},body:JSON.stringify({prefix:'',limit:50,sortBy:{column:'name',order:'asc'}})});
     const files=await res.json();
-    if(Array.isArray(files)&&files.length){
-      files.forEach(f=>{const key=f.name.replace(/\.(jpg|jpeg|png)$/i,'');refImages[key]=`${SB_URL}/storage/v1/object/public/schedule-images/${f.name}`;});
-      return;
-    }
+    if(Array.isArray(files)&&files.length){files.forEach(f=>{const key=f.name.replace(/\.(jpg|jpeg|png)$/i,'');refImages[key]=`${SB_URL}/storage/v1/object/public/schedule-images/${f.name}`;});return;}
   }catch(e){}
   const saved=localStorage.getItem('refImgs');
   if(saved) try{Object.assign(refImages,JSON.parse(saved));}catch(e){}
@@ -659,34 +602,23 @@ function isWE(ds){const w=new Date(ds).getDay();return w===0||w===6}
 function isH(ds){return!!HOLI[ds]}
 function fds(ds){const d=new Date(ds);return`${d.getMonth()+1}/${d.getDate()}`}
 function makeDs(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function saveCal(){localStorage.setItem('cal_ym',JSON.stringify({y:CY,m:CM}));}
 
 function getSitter(ds){
-  const d=D[ds];
-  if(!d) return 'off';
+  const d=D[ds];if(!d) return 'off';
   if(d.sitter!=='auto') return d.sitter;
   if(isWE(ds)||isH(ds)) return 'off';
   const n=d.nurse;
   if(!n||n==='OFF'){const pd=D[prev(ds)];if(pd&&pd.nurse==='N2')return 'morning';return 'off';}
-  if(n==='D') return 'morning';
-  if(n==='E') return 'evening';
-  if(n==='N1') return 'morning';
-  if(n==='N2') return 'both';
-  if(n==='EDU') return 'morning';
-  return 'off';
+  if(n==='D') return 'morning';if(n==='E') return 'evening';
+  if(n==='N1') return 'morning';if(n==='N2') return 'both';
+  if(n==='EDU') return 'morning';return 'off';
 }
 function defH(ds){
-  const t=getSitter(ds);
-  const mh=(tm('me')-tm('ms'))/60,eh=(tm('ee')-tm('es'))/60;
-  if(t==='morning') return mh;
-  if(t==='evening') return eh;
-  if(t==='both') return mh+eh;
-  return 0;
+  const t=getSitter(ds);const mh=(tm('me')-tm('ms'))/60,eh=(tm('ee')-tm('es'))/60;
+  if(t==='morning') return mh;if(t==='evening') return eh;if(t==='both') return mh+eh;return 0;
 }
-function actH(ds){
-  const d=D[ds];
-  if(d&&d.ah!==null&&d.ah!==undefined) return d.ah;
-  return defH(ds);
-}
+function actH(ds){const d=D[ds];if(d&&d.ah!==null&&d.ah!==undefined) return d.ah;return defH(ds);}
 
 function renderCal(){
   const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
@@ -701,8 +633,7 @@ function renderCal(){
   for(let day=1;day<=dim;day++){
     const ds=makeDs(CY,CM,day);const dow=new Date(ds).getDay();
     const c=mkCell(ds,day,false);
-    if(dow===0) c.classList.add('sun');
-    if(dow===6) c.classList.add('sat');
+    if(dow===0) c.classList.add('sun');if(dow===6) c.classList.add('sat');
     if(ds===today) c.classList.add('today');
     if(rS&&re){const[a,b]=rS<=re?[rS,re]:[re,rS];if(ds>=a&&ds<=b)c.classList.add('sel');if(ds===a||ds===b)c.classList.add('sel-e');}
     g.appendChild(c);
@@ -733,7 +664,7 @@ function mkCell(ds,day,adj){
   return c;
 }
 
-function jumpTo(ds){const d=new Date(ds);CY=d.getFullYear();CM=d.getMonth();document.querySelectorAll('.yr-b').forEach(b=>{b.classList.toggle('on',b.textContent==CY)});renderCal();}
+function jumpTo(ds){const d=new Date(ds);CY=d.getFullYear();CM=d.getMonth();document.querySelectorAll('.yr-b').forEach(b=>{b.classList.toggle('on',b.textContent==CY)});saveCal();renderCal();}
 
 function handleClick(ds){
   if(rS===ds&&!rE){openDay(ds);return;}
@@ -744,9 +675,9 @@ function handleClick(ds){
   renderCal();
 }
 
-function setYr(y,btn){CY=y;document.querySelectorAll('.yr-b').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderCal();}
-function prevM(){CM--;if(CM<0){CM=11;CY--;}renderCal();}
-function nextM(){CM++;if(CM>11){CM=0;CY++;}renderCal();}
+function setYr(y,btn){CY=y;document.querySelectorAll('.yr-b').forEach(b=>b.classList.remove('on'));btn.classList.add('on');saveCal();renderCal();}
+function prevM(){CM--;if(CM<0){CM=11;CY--;}saveCal();renderCal();}
+function nextM(){CM++;if(CM>11){CM=0;CY++;}saveCal();renderCal();}
 
 function byDate(){const s=document.getElementById('ws').value,e=document.getElementById('we').value;if(!s)return;rS=s;rE=e||s;renderCal();}
 function onRate(){saveInfo();calcRange();}
@@ -756,8 +687,7 @@ function calcRange(){
   const e=rE||document.getElementById('we').value||s;
   if(!s){document.getElementById('sinf').textContent='날짜를 캘린더에서 선택하세요';return;}
   document.getElementById('sinf').textContent=`${fds(s)} ~ ${fds(e)}`;
-  const r=rate();
-  let days=0,tot=0;const rows=[];
+  const r=rate();let days=0,tot=0;const rows=[];
   const cur=new Date(s);const end=new Date(e);
   while(cur<=end){
     const ds=cur.toISOString().slice(0,10);
@@ -774,9 +704,7 @@ function calcRange(){
   document.getElementById('sh').innerHTML=`${tot.toFixed(1)}<span class="su">h</span>`;
   document.getElementById('sw').innerHTML=`${Math.round(tot*r).toLocaleString()}<span class="su">원</span>`;
   let actualTot=0;
-  Object.entries(D).forEach(([ds,dd])=>{
-    if(dd&&dd.ah!==null&&dd.ah!==undefined&&dd.ah>0&&ds>=s&&ds<=e) actualTot+=dd.ah;
-  });
+  Object.entries(D).forEach(([ds,dd])=>{if(dd&&dd.ah!==null&&dd.ah!==undefined&&dd.ah>0&&ds>=s&&ds<=e) actualTot+=dd.ah;});
   const actualWage=Math.round(actualTot*r);
   document.getElementById('sw-actual').innerHTML=actualTot>0?`${actualWage.toLocaleString()}<span class="su">원</span>`:`0<span class="su">원</span>`;
   document.getElementById('sw-actual-detail').textContent=actualTot>0?`실제 근무 ${actualTot.toFixed(1)}h × ${r.toLocaleString()}원`:'캘린더에서 실제 근무시간 입력 시 자동 계산';
@@ -811,45 +739,27 @@ function openDay(ds){
 
 async function saveDay(){
   if(!editDs) return;
-  const hv=document.getElementById('ehr').value;
-  const mv=parseInt(document.getElementById('emin').value)||0;
+  const hv=document.getElementById('ehr').value;const mv=parseInt(document.getElementById('emin').value)||0;
   D[editDs]={nurse:document.getElementById('en').value,sitter:selSitter,ah:hv===''?null:parseFloat(hv)+mv/60,memo:document.getElementById('ememo').value.trim()};
   document.getElementById('ov-day').classList.remove('show');
-  renderCal();
-  if(rS) calcRange();
-  await saveD();
+  renderCal();if(rS) calcRange();await saveD();
 }
-
 function delDay(){if(!editDs)return;delete D[editDs];document.getElementById('ov-day').classList.remove('show');renderCal();saveD();}
 
 let curRefKey=null;
-
-function openUploadModal(){
-  document.getElementById('up-yr').value=CY;
-  document.getElementById('up-mo').value=CM;
-  updateUploadLabel();
-  document.getElementById('ov-upload').classList.add('show');
-}
-
-function updateUploadLabel(){
-  const y=document.getElementById('up-yr').value;
-  const m=parseInt(document.getElementById('up-mo').value)+1;
-  document.getElementById('up-preview-label').textContent=`📅 ${y}년 ${m}월 근무표`;
-}
+function openUploadModal(){document.getElementById('up-yr').value=CY;document.getElementById('up-mo').value=CM;updateUploadLabel();document.getElementById('ov-upload').classList.add('show');}
+function updateUploadLabel(){const y=document.getElementById('up-yr').value;const m=parseInt(document.getElementById('up-mo').value)+1;document.getElementById('up-preview-label').textContent=`📅 ${y}년 ${m}월 근무표`;}
 
 function hfile(e){
   const f=e.target.files[0];if(!f) return;e.target.value='';
-  const y=parseInt(document.getElementById('up-yr').value);
-  const m=parseInt(document.getElementById('up-mo').value);
+  const y=parseInt(document.getElementById('up-yr').value);const m=parseInt(document.getElementById('up-mo').value);
   const key=`${y}-${String(m+1).padStart(2,'0')}`;
   document.getElementById('ov-upload').classList.remove('show');
   const r=new FileReader();
   r.onload=ev=>{
-    refImages[key]=ev.target.result;
-    saveRefImageToSupabase(key,ev.target.result);
+    refImages[key]=ev.target.result;saveRefImageToSupabase(key,ev.target.result);
     showRefImage(key);curRefKey=key;
-    showPage('cal',null);
-    document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===0));
+    showPage('cal',null);document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===0));
     setTimeout(()=>document.getElementById('ref-card').scrollIntoView({behavior:'smooth',block:'start'}),150);
     doAI(ev.target.result,y,m);
   };
@@ -863,13 +773,11 @@ async function doAI(dataUrl,y,m){
   try{
     const base64=dataUrl.split(',')[1];const mediaType=dataUrl.split(';')[0].split(':')[1];
     const res=await fetch(EDGE_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},body:JSON.stringify({image:base64,mediaType})});
-    const data=await res.json();
-    if(data.error) throw new Error(data.error);
-    const txt=data.result||'';const jm=txt.match(/\{[\s\S]*\}/);
-    if(!jm) throw new Error('분석 결과를 읽을 수 없어요');
+    const data=await res.json();if(data.error) throw new Error(data.error);
+    const txt=data.result||'';const jm=txt.match(/\{[\s\S]*\}/);if(!jm) throw new Error('분석 결과를 읽을 수 없어요');
     const parsed=JSON.parse(jm[0]);const schedule=parsed.schedule||{};let cnt=0;
     for(const[day,type] of Object.entries(schedule)){const ds=makeDs(y,m,parseInt(day));D[ds]={nurse:type,sitter:'auto',ah:D[ds]?.ah||null,memo:D[ds]?.memo||''};qiState[ds]=type;cnt++;}
-    CY=y;CM=m;document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
+    CY=y;CM=m;saveCal();document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
     renderCal();saveD();
     document.getElementById('qi-monthlabel').textContent=`✅ AI 분석 완료 — ${y}년 ${m+1}월 (${cnt}일) · 틀린 날짜는 탭해서 수정하세요`;
     buildQuickGrid(y,m);
@@ -880,8 +788,7 @@ async function doAI(dataUrl,y,m){
 }
 
 function showRefImage(key){
-  renderRefTabs();curRefKey=key;
-  const img=refImages[key];
+  renderRefTabs();curRefKey=key;const img=refImages[key];
   if(img){
     document.getElementById('ref-img').src=img;document.getElementById('ref-img').style.display='block';
     document.getElementById('ref-empty').style.display='none';
@@ -898,7 +805,6 @@ function showRefImage(key){
     t.style.borderColor=t.dataset.key===key?'var(--p)':'var(--bd)';
   });
 }
-
 function renderRefTabs(){
   const tabs=document.getElementById('ref-tabs');const keys=Object.keys(refImages).sort();
   if(!keys.length){tabs.innerHTML='';return;}
@@ -909,7 +815,6 @@ function renderRefTabs(){
 
 const QI_TYPES=['','D','E','N1','N2','EDU','OFF'];
 const qiState={};
-
 function buildQuickGrid(y,m){
   if(y===undefined) y=CY;if(m===undefined) m=CM;
   const g=document.getElementById('qi-grid');g.innerHTML='';
@@ -927,20 +832,18 @@ function buildQuickGrid(y,m){
     c.appendChild(dn);c.appendChild(dt);if(!isWknd) c.onclick=()=>cycleQI(ds,c);g.appendChild(c);
   }
 }
-
 function cycleQI(ds,cell){
   const cur=qiState[ds]||'';const idx=QI_TYPES.indexOf(cur);const next=QI_TYPES[(idx+1)%QI_TYPES.length];
   qiState[ds]=next;QI_TYPES.forEach(t=>t&&cell.classList.remove('qi-'+t));if(next) cell.classList.add('qi-'+next);
   cell.querySelectorAll('div')[1].textContent=next==='N1'?'N¹':next==='N2'?'N²':next==='EDU'?'교육':next||'-';
 }
-
 function applyQuick(){
   if(!curRefKey) return;const[ys,ms]=curRefKey.split('-');const y=parseInt(ys),m=parseInt(ms)-1;let cnt=0;
   for(const[ds,type] of Object.entries(qiState)){
     if(!type||!ds.startsWith(`${ys}-${ms}`)) continue;
     D[ds]={nurse:type,sitter:'auto',ah:D[ds]?.ah||null,memo:D[ds]?.memo||''};cnt++;
   }
-  CY=y;CM=m;document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
+  CY=y;CM=m;saveCal();document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===y));
   renderCal();window.scrollTo({top:0,behavior:'smooth'});saveD();alert(`${y}년 ${m+1}월 ${cnt}일 입력 완료!`);
 }
 
@@ -961,9 +864,7 @@ function renderBoard(){
   const sorted=[...posts].sort((a,b)=>{if(a.tag==='notice'&&b.tag!=='notice')return -1;if(a.tag!=='notice'&&b.tag==='notice')return 1;return posts.indexOf(b)-posts.indexOf(a);});
   l.innerHTML=sorted.map(p=>{const i=posts.indexOf(p);return`<div class="post-card" onclick="viewPost(${i})">${tm2[p.tag]||''}<div class="ptitl">${p.title}</div><div class="pprev">${p.content}</div><div class="pmeta"><span>${p.author||'익명'}</span><span>${p.date}</span><span>💬 ${(p.comments||[]).length}</span></div></div>`;}).join('');
 }
-
 function openWrite(){document.getElementById('ov-wr').classList.add('show');}
-
 async function subPost(){
   const t=document.getElementById('ptit').value.trim(),b=document.getElementById('pbody').value.trim();
   if(!t||!b){alert('제목과 내용을 입력해주세요.');return;}
@@ -973,7 +874,6 @@ async function subPost(){
   ['ptit','pbody','pauth'].forEach(id=>document.getElementById(id).value='');
   renderBoard();
 }
-
 function viewPost(i){
   vIdx=i;const p=posts[i];const tm2={notice:'📢 공지',schedule:'📅 근무관련',general:'💬 일반'};
   document.getElementById('pvtit').textContent=p.title;
@@ -981,24 +881,20 @@ function viewPost(i){
   document.getElementById('pvbody').textContent=p.content;
   renderCmts(p.comments||[]);document.getElementById('ov-pv').classList.add('show');
 }
-
 function renderCmts(cs){
   document.getElementById('pvcmts').innerHTML=cs.length?cs.map(c=>`<div class="cmt"><div class="cmt-a">${c.author}</div><div class="cmt-t">${c.text}</div></div>`).join(''):'<div style="font-size:12px;color:var(--t3);margin-bottom:8px">첫 댓글을 남겨보세요!</div>';
 }
-
 async function addCmt(){
   const t=document.getElementById('ct').value.trim();if(!t)return;
   const saved=await saveComment(posts[vIdx].id,document.getElementById('ca').value.trim()||'익명',t);
   if(saved){posts[vIdx].comments=posts[vIdx].comments||[];posts[vIdx].comments.push({id:saved.id,author:saved.author,text:saved.text});renderCmts(posts[vIdx].comments);}
   document.getElementById('ct').value='';
 }
-
 async function delPost(){
   if(!confirm('삭제하시겠습니까?'))return;
   await deletePost(posts[vIdx].id);posts.splice(vIdx,1);
   document.getElementById('ov-pv').classList.remove('show');renderBoard();
 }
-
 function openEditPost(){
   const p=posts[vIdx];
   document.getElementById('etag').value=p.tag||'general';
@@ -1006,7 +902,6 @@ function openEditPost(){
   document.getElementById('ebody').value=p.content||'';
   document.getElementById('ov-edit').classList.add('show');
 }
-
 async function submitEditPost(){
   const t=document.getElementById('etit').value.trim();const b=document.getElementById('ebody').value.trim();
   if(!t||!b){alert('제목과 내용을 입력해주세요.');return;}
@@ -1024,18 +919,25 @@ document.querySelectorAll('.tab').forEach((tab,i)=>{const names=['cal','wage','b
 async function init(){
   document.getElementById('cgrid').innerHTML='<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--t3);font-size:13px">⏳ 데이터 불러오는 중...</div>';
   await Promise.all([loadD(),loadPosts(),loadRefImages(),loadInfo()]);
+
+  // 현재 달 기준 급여계산 기본 날짜
   const n=new Date(),y=n.getFullYear(),mo=String(n.getMonth()+1).padStart(2,'0');
   const lastDay=new Date(y,n.getMonth()+1,0).getDate();
   document.getElementById('ws').value=`${y}-${mo}-01`;
   document.getElementById('we').value=`${y}-${mo}-${String(lastDay).padStart(2,'0')}`;
   rS=`${y}-${mo}-01`;
   rE=`${y}-${mo}-${String(lastDay).padStart(2,'0')}`;
+
+  // 연도 버튼 상태
+  document.querySelectorAll('.yr-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===CY));
+
   document.getElementById('up-yr').addEventListener('change',updateUploadLabel);
   document.getElementById('up-mo').addEventListener('change',updateUploadLabel);
   if(Object.keys(refImages).length){const lastKey=Object.keys(refImages).sort().pop();showRefImage(lastKey);}
   renderCal();renderBoard();
 }
 
+// PIN LOCK
 const PIN='7778';
 let pinVal='';
 function pinInput(n){
